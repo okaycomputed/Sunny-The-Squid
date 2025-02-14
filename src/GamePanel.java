@@ -6,8 +6,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
-
 
 public class GamePanel extends JFrame {
 
@@ -78,6 +76,11 @@ public class GamePanel extends JFrame {
         JButton batheButton = new JButton(loadImage("src/assets/bathe_button.PNG"));
         batheButton.setBounds(248, 48, 59, 39);
         add(batheButton);
+
+        // Adding the status box below to display Sunny's hunger, energy, and mood
+        JLabel statusBlock = new JLabel(loadImage("src/assets/statusblock.PNG"));
+        statusBlock.setBounds(17, 323, 296, 97);
+        add(statusBlock);
 
         // Adding Sunny
         Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
