@@ -10,6 +10,41 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GamePanel extends JFrame {
+    Actions actions = new Actions();
+
+    // Initializing GUI components as instance variables (so they can be called in other classes)
+    JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
+    JButton minimize = new JButton(loadImage("src/assets/minimize.PNG"));
+
+    JButton sleepButton = new JButton(loadImage("src/assets/sleep_button.PNG"));
+    JButton eatButton = new JButton(loadImage("src/assets/eat_button.PNG"));
+    JButton playButton = new JButton(loadImage("src/assets/play_button.PNG"));
+    JButton batheButton = new JButton(loadImage("src/assets/bathe_button.PNG"));
+
+    JLabel sunnyText = new JLabel("Sunny");
+
+    JLabel fullnessText = new JLabel("Fullness");
+    JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
+    JLabel fullnessBar = new JLabel(loadImage("src/assets/bar-6.PNG"));
+
+    JLabel energyText = new JLabel("Energy");
+    JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
+    JLabel energyBar = new JLabel(loadImage("src/assets/bar-2.PNG"));
+
+    JLabel moodText = new JLabel("Mood");
+    JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
+    JLabel moodBar = new JLabel(loadImage("src/assets/bar-5.PNG"));
+
+    JLabel statusBlock = new JLabel(loadImage("src/assets/statusblock.PNG"));
+
+    Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
+    JLabel sunnyTheSquid = new JLabel(sunnyGif);
+
+    public static final int BUTTON_OFF = 0;
+    public static final int BUTTON_ON = 1;
+
+    // Setting default button states
+    int sleepState = BUTTON_OFF;
 
     public GamePanel() {
         // Setting up GUI and adding a title
@@ -30,6 +65,9 @@ public class GamePanel extends JFrame {
         // Removes the title bar
         setUndecorated(true);
 
+        // Setting the icon image of the application
+        setIconImage(loadImage("src/assets/app-icon.PNG").getImage());
+
         addCustomComponents();
         addInteractionButtons();
         addStatusBox();
@@ -39,6 +77,8 @@ public class GamePanel extends JFrame {
         // ONLY SET THIS AFTER ADDING ALL OTHER COMPONENTS
         JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
         add(backdrop);
+
+        sleepState = BUTTON_OFF;
     }
 
     // Creates the 'Font' object from a ttf file in order to create a custom font
@@ -79,7 +119,6 @@ public class GamePanel extends JFrame {
         customizeApplicationCursor();
 
         // Creating the exit button
-        JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
         exit.setBounds(291, 7, 32, 22);
 
         // Programmed so that the exit button will exit the application on click
@@ -91,7 +130,6 @@ public class GamePanel extends JFrame {
         });
         add(exit);
 
-        JButton minimize = new JButton(loadImage("src/assets/minimize.PNG"));
         minimize.setBounds(252, 7,32, 22);
         minimize.addActionListener(new ActionListener() {
             @Override
@@ -105,29 +143,43 @@ public class GamePanel extends JFrame {
 
     public void addInteractionButtons () {
         // Adding button for 'Sleep' action
-        JButton sleepButton = new JButton(loadImage("src/assets/sleep_button.PNG"));
         sleepButton.setBounds(21, 48, 59, 39);
+        sleepButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Button is default to OFF
+                if(sleepState == BUTTON_OFF) {
+                    actions.sleep(sunnyTheSquid, sleepState);
+                    // When button is clicked, set state to ON
+                    sleepState = BUTTON_ON;
+                }
+
+                // When clicked again, button state will be ON
+                else {
+                    actions.sleep(sunnyTheSquid, sleepState);
+                    // Set state to off after switching back to idle sprite
+                    sleepState = BUTTON_OFF;
+
+                }
+            }
+        });
         add(sleepButton);
 
         // Adding button for 'Eat' action
-        JButton eatButton = new JButton(loadImage("src/assets/eat_button.PNG"));
         eatButton.setBounds(97, 48, 59, 39);
         add(eatButton);
 
         // Adding button for 'Play' action
-        JButton playButton = new JButton(loadImage("src/assets/play_button.PNG"));
         playButton.setBounds(172, 48, 59, 39);
         add(playButton);
 
         // Adding button for 'Bathe' action
-        JButton batheButton = new JButton(loadImage("src/assets/bathe_button.PNG"));
         batheButton.setBounds(248, 48, 59, 39);
         add(batheButton);
     }
 
     public void addStatusBox() {
         // Adding Sunny's name in the status box
-        JLabel sunnyText = new JLabel("Sunny");
         sunnyText.setBounds(135, 325, 60, 24);
 
         // Deriving the font from the 'getFont' method
@@ -139,7 +191,6 @@ public class GamePanel extends JFrame {
 
         // Adding Sunny's 'Fullness' indicator
         // Adding text
-        JLabel fullnessText = new JLabel("Fullness");
         fullnessText.setBounds(27, 347, 63, 17);
 
         // Deriving font (for all status conditions)
@@ -149,59 +200,48 @@ public class GamePanel extends JFrame {
         add(fullnessText);
 
         // Adding icon
-        JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
         fullnessIcon.setBounds(87, 344, 26, 26);
         add(fullnessIcon);
 
         // Adding indicator bar
-        JLabel fullnessBar = new JLabel(loadImage("src/assets/bar-6.PNG"));
         fullnessBar.setBounds(115, 349, 186, 15);
         add(fullnessBar);
 
         // Adding Sunny's 'Energy' indicator
         // Adding text
-        JLabel energyText = new JLabel("Energy");
         energyText.setFont(statusFont);
         energyText.setBounds(27, 370, 57, 17);
         add(energyText);
 
         // Adding icon
-        JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
         energyIcon.setBounds(85, 366, 26, 26);
         add(energyIcon);
 
         // Adding indicator bar
-        JLabel energyBar = new JLabel(loadImage("src/assets/bar-2.PNG"));
         energyBar.setBounds(115, 372, 186, 15);
         add(energyBar);
 
         // Adding Sunny's 'Mood' indicator
         // Adding text
-        JLabel moodText = new JLabel("Mood");
         moodText.setFont(statusFont);
         moodText.setBounds(27, 393, 57, 17);
         add(moodText);
 
         // Adding icon
-        JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
         moodIcon.setBounds(85, 389, 26, 26);
         add(moodIcon);
 
         // Adding indicator bar
-        JLabel moodBar = new JLabel(loadImage("src/assets/bar-5.PNG"));
         moodBar.setBounds(115, 395, 186, 15);
         add(moodBar);
 
         // Adding the status box that displays Sunny's fullness, energy, and mood
-        JLabel statusBlock = new JLabel(loadImage("src/assets/statusblock.PNG"));
         statusBlock.setBounds(17, 323, 296, 97);
         add(statusBlock);
     }
 
     public void addSprites() {
         // Adding Sunny
-        Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
-        JLabel sunnyTheSquid = new JLabel(sunnyGif);
         sunnyTheSquid.setBounds(32,87, 267, 280);
 
         // Change the cursor when hovering over this component
