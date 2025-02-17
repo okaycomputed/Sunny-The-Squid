@@ -1,13 +1,14 @@
 import javax.swing.*;
-import java.awt.*;
 
 public class Actions {
+    Squid squid = new Squid();
+
     private void updateStatusBar(JLabel statusBar) {
 
     }
 
-    public void sleep(int buttonState) {
-        if(buttonState == GamePanel.BUTTON_OFF) {
+    public void sleep(boolean isButtonON) {
+        if(isButtonON) {
             // Changing the user interface to the dark theme
             GamePanel.exit.setIcon(new ImageIcon("src/assets/dark-exit.PNG"));
             GamePanel.minimize.setIcon(new ImageIcon("src/assets/dark-minimize.PNG"));
@@ -27,11 +28,13 @@ public class Actions {
             GamePanel.fullnessBar.setIcon(new ImageIcon("src/assets/darkbar-5.PNG"));
             GamePanel.energyBar.setIcon(new ImageIcon("src/assets/darkbar-2.PNG"));
             GamePanel.moodBar.setIcon(new ImageIcon("src/assets/darkbar-4.PNG"));
+
+            // Sets the current state of 'Squid' object
+            squid.setCurrentState(Squid.SLEEPING);
         }
 
         else {
             // Changes the UI back to a light theme
-            // Changing the user interface to the dark theme
             GamePanel.exit.setIcon(new ImageIcon("src/assets/exit.PNG"));
             GamePanel.minimize.setIcon(new ImageIcon("src/assets/minimize.PNG"));
             GamePanel.sleepButton.setIcon(new ImageIcon("src/assets/sleep.PNG"));
@@ -50,7 +53,12 @@ public class Actions {
             GamePanel.fullnessBar.setIcon(new ImageIcon("src/assets/bar-5.PNG"));
             GamePanel.energyBar.setIcon(new ImageIcon("src/assets/bar-2.PNG"));
             GamePanel.moodBar.setIcon(new ImageIcon("src/assets/bar-4.PNG"));
+
+            // Sets current state of 'Squid' object
+            squid.setCurrentState(Squid.IDLE);
         }
+
+        // System.out.println(squid.getCurrentState());
 
     }
 
@@ -69,7 +77,7 @@ public class Actions {
     /* This method records the system time when the game is first booted up
      * When time passes in real life, it will reflect on Sunny's stats
      * Per hour that you are away from Sunny, his Fullness, Energy, and Mood decreases by ONE point */
-    public void recordGameBootTime() {
+    public void recordGameTime() {
 
     }
 }

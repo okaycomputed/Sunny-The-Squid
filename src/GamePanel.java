@@ -6,11 +6,19 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 
 public class GamePanel extends JFrame {
     Actions actions = new Actions();
+
+    // Setting default button states
+    boolean isSleepButtonOn;
+
+    // Storing user-preferences
+    Preferences prefs;
 
     // Initializing GUI components as instance variables (so they can be called in other classes)
     static JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
@@ -42,11 +50,8 @@ public class GamePanel extends JFrame {
 
     static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
 
-    public static final int BUTTON_OFF = 0;
-    public static final int BUTTON_ON = 1;
-
-    // Setting default button states
-    int sleepState = BUTTON_OFF;
+    // Setting the value of the preference -- if the 'Sleep' button is clicked or not
+    private static final String IS_BUTTON_ON = "IsButtonOn";
 
     public GamePanel() {
         // Setting up GUI and adding a title
@@ -68,7 +73,16 @@ public class GamePanel extends JFrame {
         setUndecorated(true);
 
         // Setting the icon image of the application
-        setIconImage(loadImage("src/assets/app-icon.PNG").getImage());
+        setIconImage(Objects.requireNonNull(loadImage("src/assets/app-icon.PNG")).getImage());
+
+        // Set initial state for Sleep JButton
+        prefs = Preferences.userNodeForPackage(GamePanel.class);
+
+        // Retrieve stored state, default to false if not found
+        isSleepButtonOn = prefs.getBoolean(IS_BUTTON_ON, false);
+
+        // Call the method
+        actions.sleep(isSleepButtonOn);
 
         addCustomComponents();
         addInteractionButtons();
@@ -79,7 +93,6 @@ public class GamePanel extends JFrame {
         // ONLY SET THIS AFTER ADDING ALL OTHER COMPONENTS
         add(backdrop);
 
-        sleepState = BUTTON_OFF;
     }
 
     // Creates the 'Font' object from a ttf file in order to create a custom font
@@ -148,19 +161,17 @@ public class GamePanel extends JFrame {
         sleepButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Button is default to OFF
-                if(sleepState == BUTTON_OFF) {
-                    actions.sleep(sleepState);
-                    // When button is clicked, set state to ON
-                    sleepState = BUTTON_ON;
+                // If the button is NOT on, on click it will be switched to ON
+                if(!isSleepButtonOn) {
+                    isSleepButtonOn = true;
+                    actions.sleep(true);
+                    prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
                 }
 
-                // When clicked again, button state will be ON
                 else {
-                    actions.sleep(sleepState);
-                    // Set state to off after switching back to idle sprite
-                    sleepState = BUTTON_OFF;
-
+                    isSleepButtonOn = false;
+                    actions.sleep(false);
+                    prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
                 }
             }
         });
