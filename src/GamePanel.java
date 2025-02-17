@@ -13,32 +13,34 @@ public class GamePanel extends JFrame {
     Actions actions = new Actions();
 
     // Initializing GUI components as instance variables (so they can be called in other classes)
-    JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
-    JButton minimize = new JButton(loadImage("src/assets/minimize.PNG"));
+    static JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
+    static JButton minimize = new JButton(loadImage("src/assets/minimize.PNG"));
 
-    JButton sleepButton = new JButton(loadImage("src/assets/sleep_button.PNG"));
-    JButton eatButton = new JButton(loadImage("src/assets/eat_button.PNG"));
-    JButton playButton = new JButton(loadImage("src/assets/play_button.PNG"));
-    JButton batheButton = new JButton(loadImage("src/assets/bathe_button.PNG"));
+    static JButton sleepButton = new JButton(loadImage("src/assets/sleep.PNG"));
+    static JButton eatButton = new JButton(loadImage("src/assets/eat.PNG"));
+    static JButton playButton = new JButton(loadImage("src/assets/play.PNG"));
+    static JButton batheButton = new JButton(loadImage("src/assets/bathe.PNG"));
 
-    JLabel sunnyText = new JLabel("Sunny");
+    static JLabel sunnyText = new JLabel("Sunny");
 
-    JLabel fullnessText = new JLabel("Fullness");
-    JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
-    JLabel fullnessBar = new JLabel(loadImage("src/assets/bar-6.PNG"));
+    static JLabel fullnessText = new JLabel("Fullness");
+    static JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
+    static JLabel fullnessBar = new JLabel(loadImage("src/assets/bar-6.PNG"));
 
-    JLabel energyText = new JLabel("Energy");
-    JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
-    JLabel energyBar = new JLabel(loadImage("src/assets/bar-2.PNG"));
+    static JLabel energyText = new JLabel("Energy");
+    static JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
+    static JLabel energyBar = new JLabel(loadImage("src/assets/bar-2.PNG"));
 
-    JLabel moodText = new JLabel("Mood");
-    JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
-    JLabel moodBar = new JLabel(loadImage("src/assets/bar-5.PNG"));
+    static JLabel moodText = new JLabel("Mood");
+    static JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
+    static JLabel moodBar = new JLabel(loadImage("src/assets/bar-5.PNG"));
 
-    JLabel statusBlock = new JLabel(loadImage("src/assets/statusblock.PNG"));
+    static JLabel statusBlock = new JLabel(loadImage("src/assets/statusbox.PNG"));
 
-    Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
-    JLabel sunnyTheSquid = new JLabel(sunnyGif);
+    static Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
+    static JLabel sunnyTheSquid = new JLabel(sunnyGif);
+
+    static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
 
     public static final int BUTTON_OFF = 0;
     public static final int BUTTON_ON = 1;
@@ -75,7 +77,6 @@ public class GamePanel extends JFrame {
 
         // Setting the background of the application
         // ONLY SET THIS AFTER ADDING ALL OTHER COMPONENTS
-        JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
         add(backdrop);
 
         sleepState = BUTTON_OFF;
@@ -100,7 +101,7 @@ public class GamePanel extends JFrame {
     }
 
     // Method to retrieve image from the asset folder
-    public ImageIcon loadImage(String resourcePath) {
+    public static ImageIcon loadImage(String resourcePath) {
         try {
             // Reads the image file from the path given
             BufferedImage image = ImageIO.read(new File(resourcePath));
@@ -149,14 +150,14 @@ public class GamePanel extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Button is default to OFF
                 if(sleepState == BUTTON_OFF) {
-                    actions.sleep(sunnyTheSquid, sleepState);
+                    actions.sleep(sleepState);
                     // When button is clicked, set state to ON
                     sleepState = BUTTON_ON;
                 }
 
                 // When clicked again, button state will be ON
                 else {
-                    actions.sleep(sunnyTheSquid, sleepState);
+                    actions.sleep(sleepState);
                     // Set state to off after switching back to idle sprite
                     sleepState = BUTTON_OFF;
 
