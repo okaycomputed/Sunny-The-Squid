@@ -6,6 +6,8 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,6 +18,8 @@ public class GamePanel extends JFrame {
 
     // Setting default button states
     boolean isSleepButtonOn;
+
+    long gameTime;
 
     // Storing user-preferences
     Preferences prefs;
@@ -53,6 +57,11 @@ public class GamePanel extends JFrame {
     // Setting the value of the preference -- if the 'Sleep' button is clicked or not
     private static final String IS_BUTTON_ON = "IsButtonOn";
 
+    private static final String GAME_TIME = "GameTime";
+
+    // Date format for time
+    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+
     public GamePanel() {
         // Setting up GUI and adding a title
         super("Sunny The Squid");
@@ -80,6 +89,9 @@ public class GamePanel extends JFrame {
 
         // Retrieve stored state, default to false if not found
         isSleepButtonOn = prefs.getBoolean(IS_BUTTON_ON, false);
+        gameTime = prefs.getLong(GAME_TIME, System.currentTimeMillis()); // Per second (For testing)
+        Date resultTime = new Date(gameTime);
+        System.out.println(sdf.format(resultTime));
 
         // Call the method
         actions.sleep(isSleepButtonOn);

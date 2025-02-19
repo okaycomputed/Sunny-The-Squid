@@ -76,8 +76,9 @@ public class Actions {
 
     /* This method records the system time when the game is first booted up
      * When time passes in real life, it will reflect on Sunny's stats
-     * Per hour that you are away from Sunny, his Fullness, Energy, and Mood decreases by ONE point */
-    public void recordGameTime() {
-
+     * Per hour that you are away from Sunny, his Fullness, Energy, and Mood decreases by ONE point
+     * returns - elapsed time */
+    public long recordGameTime(long startTime) {
+        return 0;
     }
 }
