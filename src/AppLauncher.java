@@ -5,8 +5,9 @@ public class AppLauncher {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                GamePanel gamePanel = new GamePanel();
-                gamePanel.setVisible(true);
+                GameInterface game = new GameInterface();
+                game.setVisible(true);
+                game.startGameThread();
 
             }
         });

@@ -13,16 +13,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-public class GamePanel extends JFrame {
+public class GameInterface extends JFrame implements Runnable {
     Actions actions = new Actions();
-
-    // Setting default button states
-    boolean isSleepButtonOn;
-
-    long gameTime;
 
     // Storing user-preferences
     Preferences prefs;
+
+    // Keeps track of the time in game
+    long timeInGame;
+
+    // Setting default button states
+    boolean isSleepButtonOn;
 
     // Initializing GUI components as instance variables (so they can be called in other classes)
     static JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
@@ -54,15 +55,22 @@ public class GamePanel extends JFrame {
 
     static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
 
+    int fps = 60;
+
+    // Threading keeps the program running until it is stopped
+    // This helps keep track of the real-time related aspects in the game
+    // It will run at 60 fps to mimic an actual clock
+    Thread gameThread;
+
     // Setting the value of the preference -- if the 'Sleep' button is clicked or not
     private static final String IS_BUTTON_ON = "IsButtonOn";
 
-    private static final String GAME_TIME = "GameTime";
+    private static final String TIME_IN_GAME = "GameTime";
 
     // Date format for time
     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
-    public GamePanel() {
+    public GameInterface() {
         // Setting up GUI and adding a title
         super("Sunny The Squid");
 
@@ -85,15 +93,12 @@ public class GamePanel extends JFrame {
         setIconImage(Objects.requireNonNull(loadImage("src/assets/app-icon.PNG")).getImage());
 
         // Set initial state for Sleep JButton
-        prefs = Preferences.userNodeForPackage(GamePanel.class);
+        prefs = Preferences.userNodeForPackage(GameInterface.class);
 
         // Retrieve stored state, default to false if not found
         isSleepButtonOn = prefs.getBoolean(IS_BUTTON_ON, false);
-        gameTime = prefs.getLong(GAME_TIME, System.currentTimeMillis()); // Per second (For testing)
-        Date resultTime = new Date(gameTime);
-        System.out.println(sdf.format(resultTime));
 
-        // Call the method
+        // Call the method to refresh display
         actions.sleep(isSleepButtonOn);
 
         addCustomComponents();
@@ -107,6 +112,12 @@ public class GamePanel extends JFrame {
 
     }
 
+    public void startGameThread() {
+        gameThread = new Thread(this);
+        gameThread.start();
+    }
+
+
     // Creates the 'Font' object from a ttf file in order to create a custom font
     public Font getFont() {
         try {
@@ -114,7 +125,7 @@ public class GamePanel extends JFrame {
             return Font.createFont(Font.TRUETYPE_FONT, fileName);
 
         } catch (FontFormatException | IOException exception) {
-            Logger.getLogger(GamePanel.class.getName()).log(Level.SEVERE, null, exception);
+            Logger.getLogger(GameInterface.class.getName()).log(Level.SEVERE, null, exception);
             return super.getFont();
         }
     }
@@ -211,6 +222,7 @@ public class GamePanel extends JFrame {
 
         // Setting custom font and adding to user-interface
         sunnyText.setFont(sunnyFont);
+        sunnyText.setForeground(Color.BLACK);
         add(sunnyText);
 
         // Adding Sunny's 'Fullness' indicator
@@ -221,6 +233,7 @@ public class GamePanel extends JFrame {
         Font statusFont = getFont().deriveFont(Font.PLAIN,15);
 
         fullnessText.setFont(statusFont);
+        fullnessText.setForeground(Color.BLACK);
         add(fullnessText);
 
         // Adding icon
@@ -235,6 +248,7 @@ public class GamePanel extends JFrame {
         // Adding text
         energyText.setFont(statusFont);
         energyText.setBounds(27, 370, 57, 17);
+        energyText.setForeground(Color.BLACK);
         add(energyText);
 
         // Adding icon
@@ -249,6 +263,7 @@ public class GamePanel extends JFrame {
         // Adding text
         moodText.setFont(statusFont);
         moodText.setBounds(27, 393, 57, 17);
+        moodText.setForeground(Color.BLACK);
         add(moodText);
 
         // Adding icon
@@ -273,5 +288,44 @@ public class GamePanel extends JFrame {
         sunnyTheSquid.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
 
         add(sunnyTheSquid);
+    }
+
+    @Override
+    public void run() {
+        double drawInterval = (double) 1000000000 / fps;  // 1000000000 nanoseconds = 1 second
+        double nextDrawTime = System.nanoTime() + drawInterval;
+        long currentTime;
+
+        // An infinite while-loop that keeps the game running
+        while(gameThread != null) {
+            // Keeps track of the current time in milliseconds
+            currentTime = System.currentTimeMillis();
+
+            // Save the current time inside preferences
+            prefs.putLong(TIME_IN_GAME, timeInGame);
+            Date timeFormat = new Date (currentTime);
+
+            // Print to test
+            System.out.println(sdf.format(timeFormat));
+
+            try {
+                double remainingTime = nextDrawTime - System.nanoTime();
+                // Convert remaining time (in nanoseconds) to milliseconds
+                remainingTime = remainingTime/1000000;
+
+                if(remainingTime < 0) {
+                    remainingTime = 0;
+                }
+
+                // Thread will pause briefly
+                Thread.sleep((long) remainingTime);
+
+                // The next time that the thread will begin drawing
+                nextDrawTime += drawInterval;
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
