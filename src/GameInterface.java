@@ -15,12 +15,21 @@ import java.util.prefs.Preferences;
 
 public class GameInterface extends JFrame implements Runnable {
     Actions actions = new Actions();
+    Squid squid = new Squid();
+
+    // Adding indicator bar JLabels
+    StatusBar fullness = new StatusBar();
+    StatusBar energy = new StatusBar();
+    StatusBar mood = new StatusBar();
 
     // Storing user-preferences
     Preferences prefs;
 
     // Keeps track of the time in game
     long timeInGame;
+
+    // Keeps track of the squid object's current state
+    int currentState = squid.getCurrentState();
 
     // Setting default button states
     boolean isSleepButtonOn;
@@ -38,15 +47,12 @@ public class GameInterface extends JFrame implements Runnable {
 
     static JLabel fullnessText = new JLabel("Fullness");
     static JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
-    static JLabel fullnessBar = new JLabel(loadImage("src/assets/bar-6.PNG"));
 
     static JLabel energyText = new JLabel("Energy");
     static JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
-    static JLabel energyBar = new JLabel(loadImage("src/assets/bar-2.PNG"));
 
     static JLabel moodText = new JLabel("Mood");
     static JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
-    static JLabel moodBar = new JLabel(loadImage("src/assets/bar-5.PNG"));
 
     static JLabel statusBlock = new JLabel(loadImage("src/assets/statusbox.PNG"));
 
@@ -66,6 +72,8 @@ public class GameInterface extends JFrame implements Runnable {
     private static final String IS_BUTTON_ON = "IsButtonOn";
 
     private static final String TIME_IN_GAME = "GameTime";
+
+    private static final String CURRENT_STATE = "SquidState";
 
     // Date format for time
     SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
@@ -99,8 +107,7 @@ public class GameInterface extends JFrame implements Runnable {
         isSleepButtonOn = prefs.getBoolean(IS_BUTTON_ON, false);
 
         // Call the method to refresh display
-        actions.sleep(isSleepButtonOn);
-
+        actions.sleep(isSleepButtonOn, fullness, energy, mood);
         addCustomComponents();
         addInteractionButtons();
         addStatusBox();
@@ -187,14 +194,22 @@ public class GameInterface extends JFrame implements Runnable {
                 // If the button is NOT on, on click it will be switched to ON
                 if(!isSleepButtonOn) {
                     isSleepButtonOn = true;
-                    actions.sleep(true);
+
+                    // Call 'sleep' method in actions to change the UI
+                    actions.sleep(true, fullness, energy, mood);
+
+                    // Keep button state inside preferences
                     prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
+
+                    // Save the current state of the squid inside preferences
+                    prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
                 }
 
                 else {
                     isSleepButtonOn = false;
-                    actions.sleep(false);
+                    actions.sleep(false, fullness, energy, mood);
                     prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
+                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
                 }
             }
         });
@@ -241,8 +256,8 @@ public class GameInterface extends JFrame implements Runnable {
         add(fullnessIcon);
 
         // Adding indicator bar
-        fullnessBar.setBounds(115, 349, 186, 15);
-        add(fullnessBar);
+        fullness.setBounds(115, 349, 186, 15);
+        add(fullness);
 
         // Adding Sunny's 'Energy' indicator
         // Adding text
@@ -256,8 +271,8 @@ public class GameInterface extends JFrame implements Runnable {
         add(energyIcon);
 
         // Adding indicator bar
-        energyBar.setBounds(115, 372, 186, 15);
-        add(energyBar);
+        energy.setBounds(115, 372, 186, 15);
+        add(energy);
 
         // Adding Sunny's 'Mood' indicator
         // Adding text
@@ -271,8 +286,8 @@ public class GameInterface extends JFrame implements Runnable {
         add(moodIcon);
 
         // Adding indicator bar
-        moodBar.setBounds(115, 395, 186, 15);
-        add(moodBar);
+        mood.setBounds(115, 395, 186, 15);
+        add(mood);
 
         // Adding the status box that displays Sunny's fullness, energy, and mood
         statusBlock.setBounds(17, 323, 296, 97);
@@ -294,6 +309,7 @@ public class GameInterface extends JFrame implements Runnable {
     public void run() {
         double drawInterval = (double) 1000000000 / fps;  // 1000000000 nanoseconds = 1 second
         double nextDrawTime = System.nanoTime() + drawInterval;
+        double millisecondsPassed = 0;
         long currentTime;
 
         // An infinite while-loop that keeps the game running
@@ -303,10 +319,20 @@ public class GameInterface extends JFrame implements Runnable {
 
             // Save the current time inside preferences
             prefs.putLong(TIME_IN_GAME, timeInGame);
-            Date timeFormat = new Date (currentTime);
+
+            Date timeFormat = new Date(currentTime);
 
             // Print to test
             System.out.println(sdf.format(timeFormat));
+
+            millisecondsPassed++;
+
+            // When the squid is idle, naturally decrease stats by one point every minute
+            if((millisecondsPassed/1000) > 5 && currentState == Squid.IDLE) {
+                actions.updateStatusBar(fullness, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+                actions.updateStatusBar(energy, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+                actions.updateStatusBar(mood, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+            }
 
             try {
                 double remainingTime = nextDrawTime - System.nanoTime();

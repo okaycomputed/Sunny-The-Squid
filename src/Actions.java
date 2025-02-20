@@ -3,7 +3,7 @@ import javax.swing.*;
 public class Actions {
     Squid squid = new Squid();
 
-    public void sleep(boolean isButtonON) {
+    public void sleep(boolean isButtonON, StatusBar fullness, StatusBar energy, StatusBar mood) {
         if(isButtonON) {
             // Changing the user interface to the dark theme
             GameInterface.exit.setIcon(new ImageIcon("src/assets/dark-exit.PNG"));
@@ -20,13 +20,10 @@ public class Actions {
 
             GameInterface.backdrop.setIcon(new ImageIcon("src/assets/dark-backdrop.PNG"));
 
-            // Bar placeholders
-            GameInterface.fullnessBar.setIcon(new ImageIcon("src/assets/darkbar-5.PNG"));
-            GameInterface.energyBar.setIcon(new ImageIcon("src/assets/darkbar-2.PNG"));
-            GameInterface.moodBar.setIcon(new ImageIcon("src/assets/darkbar-4.PNG"));
+            fullness.setIcon(new ImageIcon("src/assets/darkbar-" + fullness.getStatValue() + ".PNG"));
+            energy.setIcon(new ImageIcon("src/assets/darkbar-" + energy.getStatValue() + ".PNG"));
+            mood.setIcon(new ImageIcon("src/assets/darkbar-" + mood.getStatValue() + ".PNG"));
 
-            // Sets the current state of 'Squid' object
-            squid.setCurrentState(Squid.SLEEPING);
         }
 
         else {
@@ -45,16 +42,10 @@ public class Actions {
 
             GameInterface.backdrop.setIcon(new ImageIcon("src/assets/backdrop.PNG"));
 
-            // Bar placeholders
-            GameInterface.fullnessBar.setIcon(new ImageIcon("src/assets/bar-5.PNG"));
-            GameInterface.energyBar.setIcon(new ImageIcon("src/assets/bar-2.PNG"));
-            GameInterface.moodBar.setIcon(new ImageIcon("src/assets/bar-4.PNG"));
-
-            // Sets current state of 'Squid' object
-            squid.setCurrentState(Squid.IDLE);
+            fullness.setIcon(new ImageIcon("src/assets/bar-" + fullness.getStatValue() + ".PNG"));
+            energy.setIcon(new ImageIcon("src/assets/bar-" + energy.getStatValue() + ".PNG"));
+            mood.setIcon(new ImageIcon("src/assets/bar-" + mood.getStatValue() + ".PNG"));
         }
-
-        // System.out.println(squid.getCurrentState());
 
     }
 
@@ -70,11 +61,37 @@ public class Actions {
 
     }
 
+    public String getResourcePath(int statValue, int currentState) {
+        if(statValue == 8 && currentState == Squid.IDLE) {
+            return "src/assets/bar-0.PNG";
+        }
+
+        else if(statValue == 8 && currentState == Squid.SLEEPING) {
+            return "src/assets/darkbar-0.PNG";
+        }
+
+        else if(currentState == Squid.IDLE) {
+            return "src/assets/bar-" + statValue +".PNG";
+        }
+
+        else {
+            return "src/assets/darkbar-" + statValue + ".PNG";
+        }
+
+    }
+
     /* This method updates the status bar according to the time elapsed in real-time
      * When time passes in real life, it will reflect on Sunny's stats
      * Per hour that you are away from Sunny, his Fullness, Energy, and Mood decreases by ONE point
-     * returns - elapsed time */
-    public void updateStatusBar(long elapsedTime) {
+     * However, actions will increase these stats */
+    public void updateStatusBar(StatusBar statusBar, int changeValue, int currentState) {
+        // Calculating new stat value
+        int newValue = statusBar.getStatValue() + changeValue;
 
+        // Updating UI accordingly
+        statusBar.setIcon(new ImageIcon(getResourcePath(newValue, currentState)));
+
+        // Update stat value in corresponding StatusBar object
+        statusBar.setStatValue(newValue);
     }
 }
