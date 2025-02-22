@@ -7,7 +7,6 @@ public class AppLauncher {
             public void run() {
                 GameInterface game = new GameInterface();
                 game.setVisible(true);
-                game.startGameThread();
 
             }
         });

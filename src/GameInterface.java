@@ -6,30 +6,30 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
-public class GameInterface extends JFrame implements Runnable {
+public class GameInterface extends JFrame {
     Actions actions = new Actions();
     Squid squid = new Squid();
 
     // Adding indicator bar JLabels
-    StatusBar fullness = new StatusBar();
-    StatusBar energy = new StatusBar();
-    StatusBar mood = new StatusBar();
+    StatusBar fullness = new StatusBar(FULLNESS_BAR);
+    StatusBar energy = new StatusBar(ENERGY_BAR);
+    StatusBar mood = new StatusBar(MOOD_BAR);
 
     // Storing user-preferences
     Preferences prefs;
 
-    // Keeps track of the time in game
-    long timeInGame;
-
     // Keeps track of the squid object's current state
-    int currentState = squid.getCurrentState();
+    int currentState;
 
     // Setting default button states
     boolean isSleepButtonOn;
@@ -61,22 +61,37 @@ public class GameInterface extends JFrame implements Runnable {
 
     static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
 
-    int fps = 60;
-
-    // Threading keeps the program running until it is stopped
-    // This helps keep track of the real-time related aspects in the game
-    // It will run at 60 fps to mimic an actual clock
-    Thread gameThread;
-
-    // Setting the value of the preference -- if the 'Sleep' button is clicked or not
+    // Preference keys
+    // To save the state of the sleep button
     private static final String IS_BUTTON_ON = "IsButtonOn";
 
-    private static final String TIME_IN_GAME = "GameTime";
-
+    // To save the current state of the squid object
     private static final String CURRENT_STATE = "SquidState";
 
-    // Date format for time
-    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+    // To save the points in each status bar
+    private static final String FULLNESS_BAR = "Fullness";
+    private static final String ENERGY_BAR = "Energy";
+    private static final String MOOD_BAR = "Mood";
+
+    // Initializing executor to execute certain tasks after a specified time interval
+    // In this case, after every hour that the squid is idle, all stats will decrease by one point
+    ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+    // Using Atomic reference to update tasks dynamically without needing to restart the application
+    AtomicReference<Runnable> updateFullness = new AtomicReference<>();
+    AtomicReference<Runnable> updateEnergy = new AtomicReference<>();
+    AtomicReference<Runnable> updateMood = new AtomicReference<>();
+
+    // Creating scheduled tasks
+    volatile ScheduledFuture<?> scheduledFullness;
+    volatile ScheduledFuture<?> scheduledEnergy;
+    volatile ScheduledFuture<?> scheduledMood;
+
+    Runnable decreaseFullness = () -> actions.updateStatusBar(fullness, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+    Runnable decreaseEnergy = () -> actions.updateStatusBar(energy, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+    Runnable decreaseMood = () -> actions.updateStatusBar(mood, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+
+    Runnable increaseEnergy = () -> actions.updateStatusBar(energy, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
 
     public GameInterface() {
         // Setting up GUI and adding a title
@@ -106,6 +121,9 @@ public class GameInterface extends JFrame implements Runnable {
         // Retrieve stored state, default to false if not found
         isSleepButtonOn = prefs.getBoolean(IS_BUTTON_ON, false);
 
+        // Retrieve stored state for the squid's current status
+        currentState = prefs.getInt(CURRENT_STATE, squid.getCurrentState());
+
         // Call the method to refresh display
         actions.sleep(isSleepButtonOn, fullness, energy, mood);
         addCustomComponents();
@@ -117,13 +135,10 @@ public class GameInterface extends JFrame implements Runnable {
         // ONLY SET THIS AFTER ADDING ALL OTHER COMPONENTS
         add(backdrop);
 
-    }
+        setCurrentTasks();
+        startScheduledTasks();
 
-    public void startGameThread() {
-        gameThread = new Thread(this);
-        gameThread.start();
     }
-
 
     // Creates the 'Font' object from a ttf file in order to create a custom font
     public Font getFont() {
@@ -159,6 +174,7 @@ public class GameInterface extends JFrame implements Runnable {
         return null;
     }
 
+    // Creates a custom exit and minimize button
     public void addCustomComponents() {
         customizeApplicationCursor();
 
@@ -185,6 +201,7 @@ public class GameInterface extends JFrame implements Runnable {
 
     }
 
+    // Adds 'Sleep', 'Eat', 'Play', and 'Bathe' button to interact with the squid sprite
     public void addInteractionButtons () {
         // Adding button for 'Sleep' action
         sleepButton.setBounds(21, 48, 59, 39);
@@ -203,14 +220,24 @@ public class GameInterface extends JFrame implements Runnable {
 
                     // Save the current state of the squid inside preferences
                     prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
+
+                    // Set current tasks
                 }
 
                 else {
                     isSleepButtonOn = false;
                     actions.sleep(false, fullness, energy, mood);
+
                     prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
                     prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
                 }
+
+                // Sets the current tasks to be carried out
+                setCurrentTasks();
+
+                // Cancels old tasks in order to execute new tasks
+                restartTasks();
             }
         });
         add(sleepButton);
@@ -228,6 +255,7 @@ public class GameInterface extends JFrame implements Runnable {
         add(batheButton);
     }
 
+    // Creates the section in which the Squid's stats can be viewed in a graphic format
     public void addStatusBox() {
         // Adding Sunny's name in the status box
         sunnyText.setBounds(135, 325, 60, 24);
@@ -294,6 +322,7 @@ public class GameInterface extends JFrame implements Runnable {
         add(statusBlock);
     }
 
+    // Adds the Squid's sprite
     public void addSprites() {
         // Adding Sunny
         sunnyTheSquid.setBounds(32,87, 267, 280);
@@ -305,53 +334,46 @@ public class GameInterface extends JFrame implements Runnable {
         add(sunnyTheSquid);
     }
 
-    @Override
-    public void run() {
-        double drawInterval = (double) 1000000000 / fps;  // 1000000000 nanoseconds = 1 second
-        double nextDrawTime = System.nanoTime() + drawInterval;
-        double millisecondsPassed = 0;
-        long currentTime;
+    // Sets current tasks according to the current state of the squid
+    // This executes the tasks at a certain time period (every hour)
+    private void setCurrentTasks() {
+        // Schedule the task to run every 5 seconds with a delay of 0 seconds
+        // Change the series of tasks depending on whether the SLEEP BUTTON is on or not
 
-        // An infinite while-loop that keeps the game running
-        while(gameThread != null) {
-            // Keeps track of the current time in milliseconds
-            currentTime = System.currentTimeMillis();
+        // If it is not on, decrease all stats accordingly by one point
+        if(!prefs.getBoolean(IS_BUTTON_ON, false)) {
+            updateFullness.set(decreaseFullness);
+            updateEnergy.set(decreaseEnergy);
+            updateMood.set(decreaseMood);
+        }
 
-            // Save the current time inside preferences
-            prefs.putLong(TIME_IN_GAME, timeInGame);
-
-            Date timeFormat = new Date(currentTime);
-
-            // Print to test
-            System.out.println(sdf.format(timeFormat));
-
-            millisecondsPassed++;
-
-            // When the squid is idle, naturally decrease stats by one point every minute
-            if((millisecondsPassed/1000) > 5 && currentState == Squid.IDLE) {
-                actions.updateStatusBar(fullness, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
-                actions.updateStatusBar(energy, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
-                actions.updateStatusBar(mood, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
-            }
-
-            try {
-                double remainingTime = nextDrawTime - System.nanoTime();
-                // Convert remaining time (in nanoseconds) to milliseconds
-                remainingTime = remainingTime/1000000;
-
-                if(remainingTime < 0) {
-                    remainingTime = 0;
-                }
-
-                // Thread will pause briefly
-                Thread.sleep((long) remainingTime);
-
-                // The next time that the thread will begin drawing
-                nextDrawTime += drawInterval;
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        // If it is, decrease all stats but increase energy by 1 point every hour
+        else {
+            updateFullness.set(decreaseFullness);
+            updateEnergy.set(increaseEnergy);
+            updateMood.set(decreaseMood);
         }
     }
+
+    // Starts the tasks
+    private void startScheduledTasks() {
+        scheduledFullness = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), 5, 5, TimeUnit.SECONDS);
+        scheduledEnergy = executor.scheduleAtFixedRate(() -> updateEnergy.get().run(), 5, 5, TimeUnit.SECONDS);
+        scheduledMood = executor.scheduleAtFixedRate(() -> updateMood.get().run(), 5, 5, TimeUnit.SECONDS);
+    }
+
+    // Cancels previous tasks in order to run new ones
+    private void restartTasks() {
+        // If tasks are still running (not null) then cancel them in order to start new tasks
+        if(scheduledFullness != null && scheduledEnergy != null && scheduledMood != null) {
+            // Cancel all running tasks
+            scheduledFullness.cancel(false);
+            scheduledEnergy.cancel(false);
+            scheduledMood.cancel(false);
+        }
+
+        // Start new tasks
+        startScheduledTasks();
+    }
+
 }

@@ -3,6 +3,12 @@ import javax.swing.*;
 public class Actions {
     Squid squid = new Squid();
 
+    /* When the 'Sleep' JButton is clicked, it will change the GUI to a dark version and change the sprite of the squid.
+     * It will then set the current state of the Squid object accordingly
+     * @param isButtonON  - Checks if the 'Sleep' JButton is switched on
+     * @param fullness    - 'Fullness' Status bar in order to update the StatusBar object
+     * @param energy      - 'Energy' Status bar in order to update the StatusBar object
+     * @param mood        - 'Mood' Status bar in order to update the StatusBar object */
     public void sleep(boolean isButtonON, StatusBar fullness, StatusBar energy, StatusBar mood) {
         if(isButtonON) {
             // Changing the user interface to the dark theme
@@ -23,6 +29,8 @@ public class Actions {
             fullness.setIcon(new ImageIcon("src/assets/darkbar-" + fullness.getStatValue() + ".PNG"));
             energy.setIcon(new ImageIcon("src/assets/darkbar-" + energy.getStatValue() + ".PNG"));
             mood.setIcon(new ImageIcon("src/assets/darkbar-" + mood.getStatValue() + ".PNG"));
+
+            squid.setCurrentState(Squid.SLEEPING);
 
         }
 
@@ -45,6 +53,8 @@ public class Actions {
             fullness.setIcon(new ImageIcon("src/assets/bar-" + fullness.getStatValue() + ".PNG"));
             energy.setIcon(new ImageIcon("src/assets/bar-" + energy.getStatValue() + ".PNG"));
             mood.setIcon(new ImageIcon("src/assets/bar-" + mood.getStatValue() + ".PNG"));
+
+            squid.setCurrentState(Squid.IDLE);
         }
 
     }
@@ -61,21 +71,17 @@ public class Actions {
 
     }
 
-    public String getResourcePath(int statValue, int currentState) {
-        if(statValue == 8 && currentState == Squid.IDLE) {
-            return "src/assets/bar-0.PNG";
-        }
-
-        else if(statValue == 8 && currentState == Squid.SLEEPING) {
-            return "src/assets/darkbar-0.PNG";
-        }
-
-        else if(currentState == Squid.IDLE) {
-            return "src/assets/bar-" + statValue +".PNG";
+    /* Retrieves the resource file of the status bar according to the number of points
+     * @param newValue        - New stat value
+     * @param currentState    - Whether the GUI is in dark or light mode
+     * @return                - The path of the image file as a String */
+    public String getResourcePath(int newValue, int currentState) {
+        if(currentState == Squid.SLEEPING) {
+            return "src/assets/darkbar-" + newValue +".PNG";
         }
 
         else {
-            return "src/assets/darkbar-" + statValue + ".PNG";
+            return "src/assets/bar-" + newValue + ".PNG";
         }
 
     }
@@ -83,15 +89,27 @@ public class Actions {
     /* This method updates the status bar according to the time elapsed in real-time
      * When time passes in real life, it will reflect on Sunny's stats
      * Per hour that you are away from Sunny, his Fullness, Energy, and Mood decreases by ONE point
-     * However, actions will increase these stats */
+     * However, actions will increase these stats
+     * @param statusBar       - StatusBar object to be updated
+     * @param changeValue     - Amount to be changed
+     * @param currentState    - State of the Squid object (in order to know which mode the GUI is in) */
     public void updateStatusBar(StatusBar statusBar, int changeValue, int currentState) {
+        // Updating UI accordingly (only if possible)
         // Calculating new stat value
         int newValue = statusBar.getStatValue() + changeValue;
 
-        // Updating UI accordingly
-        statusBar.setIcon(new ImageIcon(getResourcePath(newValue, currentState)));
+        // If the new value is 0, 1, 2, 3, 4, 5, 6, or 7, update accordingly
+        // If not, ignore it
+        if(newValue >= 0 && newValue <= 7) {
 
-        // Update stat value in corresponding StatusBar object
-        statusBar.setStatValue(newValue);
+            // Update stat value in corresponding StatusBar object
+            statusBar.setStatValue(newValue);
+
+            // Updating stat value
+            statusBar.setIcon(new ImageIcon(getResourcePath(statusBar.getStatValue(), currentState)));
+
+            // Testing print statement
+            System.out.println(getResourcePath(newValue, currentState));
+        }
     }
 }
