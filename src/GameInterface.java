@@ -6,6 +6,9 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +29,7 @@ public class GameInterface extends JFrame {
     StatusBar mood = new StatusBar(MOOD_BAR);
 
     // Storing user-preferences
-    Preferences prefs;
+    static Preferences prefs;
 
     // Keeps track of the squid object's current state
     int currentState;
@@ -73,6 +76,9 @@ public class GameInterface extends JFrame {
     private static final String ENERGY_BAR = "Energy";
     private static final String MOOD_BAR = "Mood";
 
+    // Saves the last time the bar was updated
+    private static final String LAST_UPDATE_TIME = "LastUpdateTime";
+
     // Initializing executor to execute certain tasks after a specified time interval
     // In this case, after every hour that the squid is idle, all stats will decrease by one point
     ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -87,11 +93,17 @@ public class GameInterface extends JFrame {
     volatile ScheduledFuture<?> scheduledEnergy;
     volatile ScheduledFuture<?> scheduledMood;
 
+    // Runnable to increase and decrease stats by 1 point
     Runnable decreaseFullness = () -> actions.updateStatusBar(fullness, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable decreaseEnergy = () -> actions.updateStatusBar(energy, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable decreaseMood = () -> actions.updateStatusBar(mood, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
 
+    Runnable increaseFullness = () -> actions.updateStatusBar(fullness, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable increaseEnergy = () -> actions.updateStatusBar(energy, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+    Runnable increaseMood = () -> actions.updateStatusBar(mood, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
+
+    static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    static final int INTERVAL_MINUTES = 60;
 
     public GameInterface() {
         // Setting up GUI and adding a title
@@ -135,8 +147,14 @@ public class GameInterface extends JFrame {
         // ONLY SET THIS AFTER ADDING ALL OTHER COMPONENTS
         add(backdrop);
 
+        // Checks all the tasks that were missed while the application was closed and returns the amount of time before the next task
+        long remainingTime = checkedMissedExecutions();
+
+        // Set current tasks according to the button state
         setCurrentTasks();
-        startScheduledTasks();
+
+        // Start scheduled tasks, considering the previous execution time
+        startScheduledTasks(remainingTime);
 
     }
 
@@ -191,6 +209,8 @@ public class GameInterface extends JFrame {
         add(exit);
 
         minimize.setBounds(252, 7,32, 22);
+
+        // Minimize button will minimize application to system tray
         minimize.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -221,7 +241,8 @@ public class GameInterface extends JFrame {
                     // Save the current state of the squid inside preferences
                     prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
 
-                    // Set current tasks
+                    System.out.println("Sunny began sleeping at " + LocalDateTime.now().format(timeFormatter));
+
                 }
 
                 else {
@@ -230,6 +251,8 @@ public class GameInterface extends JFrame {
 
                     prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
                     prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
+                    System.out.println("Sunny is idle at " + LocalDateTime.now().format(timeFormatter));
 
                 }
 
@@ -244,6 +267,12 @@ public class GameInterface extends JFrame {
 
         // Adding button for 'Eat' action
         eatButton.setBounds(97, 48, 59, 39);
+        eatButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                actions.eat(fullness);
+            }
+        });
         add(eatButton);
 
         // Adding button for 'Play' action
@@ -334,12 +363,16 @@ public class GameInterface extends JFrame {
         add(sunnyTheSquid);
     }
 
+    // Saves the last time the status bar update method ran
+    public static void saveExecutionTime() {
+        prefs.put(LAST_UPDATE_TIME, LocalDateTime.now().format(timeFormatter));
+    }
+
     // Sets current tasks according to the current state of the squid
     // This executes the tasks at a certain time period (every hour)
     private void setCurrentTasks() {
-        // Schedule the task to run every 5 seconds with a delay of 0 seconds
+        // Schedule the task to run every 60 minutes
         // Change the series of tasks depending on whether the SLEEP BUTTON is on or not
-
         // If it is not on, decrease all stats accordingly by one point
         if(!prefs.getBoolean(IS_BUTTON_ON, false)) {
             updateFullness.set(decreaseFullness);
@@ -356,10 +389,61 @@ public class GameInterface extends JFrame {
     }
 
     // Starts the tasks
-    private void startScheduledTasks() {
-        scheduledFullness = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), 5, 5, TimeUnit.SECONDS);
-        scheduledEnergy = executor.scheduleAtFixedRate(() -> updateEnergy.get().run(), 5, 5, TimeUnit.SECONDS);
-        scheduledMood = executor.scheduleAtFixedRate(() -> updateMood.get().run(), 5, 5, TimeUnit.SECONDS);
+    private void startScheduledTasks(long remainingTime) {
+        // Start the next execution after a delay period (the remaining time left until the next execution)
+        scheduledFullness = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), remainingTime, INTERVAL_MINUTES, TimeUnit.MINUTES);
+        scheduledEnergy = executor.scheduleAtFixedRate(() -> updateEnergy.get().run(), remainingTime, INTERVAL_MINUTES, TimeUnit.MINUTES);
+        scheduledMood = executor.scheduleAtFixedRate(() -> updateMood.get().run(), remainingTime, INTERVAL_MINUTES, TimeUnit.MINUTES);
+    }
+
+    private long checkedMissedExecutions() {
+        // Retrieve last update time from preferences
+        String lastUpdateTime = prefs.get(LAST_UPDATE_TIME, null);
+        System.out.println("Status bar was last updated at " + lastUpdateTime);
+
+        // If there exists a 'Last Update Time', then execute the missed executions on application boot
+        if(lastUpdateTime != null) {
+            // Parse the 'Last Update Time' (of string) into 'LocalDateTime'
+            LocalDateTime lastUpdate = LocalDateTime.parse(lastUpdateTime, timeFormatter);
+            LocalDateTime now = LocalDateTime.now();
+
+            // Calculate the missed intervals
+            // E.g. if 120 minutes have passed, 120/60 means that there were 2 missed intervals
+            long missedIntervals = ChronoUnit.MINUTES.between(lastUpdate, now) / 60;
+
+            // Calculates the additional time that has passed between the last time and now
+            // MOD the time interval to get the REMAINDER
+            long extraTime = ChronoUnit.MINUTES.between(lastUpdate, now) % INTERVAL_MINUTES;
+
+            if(missedIntervals > 0) {
+                System.out.println("Missed " + missedIntervals + " executions, running them now...");
+                for(int i = 0; i < missedIntervals; i++) {
+                    runBarUpdate();
+                }
+            }
+
+            // The next execution should begin at the next expected time
+            System.out.println("Scheduling next task in " + (INTERVAL_MINUTES - extraTime) + " minutes");
+            return INTERVAL_MINUTES - extraTime;
+        }
+
+        // If no previous executions, start immediately
+        return 0;
+    }
+
+    private void runBarUpdate() {
+        // These methods run when the squid is sleeping
+        if(isSleepButtonOn) {
+            actions.updateStatusBar(fullness, -1, Squid.SLEEPING);
+            actions.updateStatusBar(energy, 1, Squid.SLEEPING);
+            actions.updateStatusBar(mood, -1, Squid.SLEEPING);
+        }
+
+        else {
+            actions.updateStatusBar(fullness, -1, Squid.IDLE);
+            actions.updateStatusBar(energy, -1, Squid.IDLE);
+            actions.updateStatusBar(mood, -1, Squid.IDLE);
+        }
     }
 
     // Cancels previous tasks in order to run new ones
@@ -373,7 +457,7 @@ public class GameInterface extends JFrame {
         }
 
         // Start new tasks
-        startScheduledTasks();
+        startScheduledTasks(INTERVAL_MINUTES); // Restart with default interval
     }
 
 }

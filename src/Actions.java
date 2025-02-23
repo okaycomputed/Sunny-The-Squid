@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.time.LocalDateTime;
 
 public class Actions {
     Squid squid = new Squid();
@@ -59,8 +60,8 @@ public class Actions {
 
     }
 
-    public void eat() {
-
+    public void eat(StatusBar fullness) {
+        updateStatusBar(fullness, 1, Squid.EATING);
     }
 
     public void play() {
@@ -108,8 +109,20 @@ public class Actions {
             // Updating stat value
             statusBar.setIcon(new ImageIcon(getResourcePath(statusBar.getStatValue(), currentState)));
 
-            // Testing print statement
-            System.out.println(getResourcePath(newValue, currentState));
+            if(currentState == Squid.SLEEPING) {
+                System.out.println("Executing Sleep Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+            }
+
+            else if(currentState == Squid.IDLE){
+                System.out.println("Executing Idle Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+            }
+
+            else {
+                System.out.println("Executing Eating Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+            }
         }
+
+        // Whenever this method is called, keep track of the execution time
+        GameInterface.saveExecutionTime();
     }
 }
