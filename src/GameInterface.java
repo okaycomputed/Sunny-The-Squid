@@ -1,8 +1,7 @@
 import javax.swing.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -59,10 +58,23 @@ public class GameInterface extends JFrame {
 
     static JLabel statusBlock = new JLabel(loadImage("src/assets/statusbox.PNG"));
 
-    static Icon sunnyGif = new ImageIcon("src/assets/sunny.GIF");
-    static JLabel sunnyTheSquid = new JLabel(sunnyGif);
+    // Sunny's default idle GIF
+    static Icon sunnyIdle = new ImageIcon("src/assets/sunny.GIF");
+    static JLabel sunnyTheSquid = new JLabel(sunnyIdle);
+
+    // Storing all of Sunny's eating sprites inside an array
+    static Icon[] sunnyEat = new Icon[9];
+
+    /* When food is hovered over the squid, it will change the sprite to a BufferedImage in order to retrieve the
+       color values of the image when hovering over it - this is to prevent activating the 'eat' method when hovering
+       over a transparent pixel */
+    static BufferedImage sunnyEatImg = loadBufferedImage("src/assets/eat-0.PNG");
+
+    static JLabel squidFood = new JLabel(loadImage("src/assets/food-1.PNG"));
 
     static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
+
+    Image petting = getToolkit().getImage("src/assets/petting.PNG");
 
     // Preference keys
     // To save the state of the sleep button
@@ -97,13 +109,16 @@ public class GameInterface extends JFrame {
     Runnable decreaseFullness = () -> actions.updateStatusBar(fullness, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable decreaseEnergy = () -> actions.updateStatusBar(energy, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable decreaseMood = () -> actions.updateStatusBar(mood, -1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
-
-    Runnable increaseFullness = () -> actions.updateStatusBar(fullness, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
     Runnable increaseEnergy = () -> actions.updateStatusBar(energy, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
-    Runnable increaseMood = () -> actions.updateStatusBar(mood, 1, prefs.getInt(CURRENT_STATE, Squid.IDLE));
 
     static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     static final int INTERVAL_MINUTES = 60;
+
+    // Variables to store mouse coordinates
+    private volatile int screenX;
+    private volatile int screenY;
+    private volatile int myX;
+    private volatile int myY;
 
     public GameInterface() {
         // Setting up GUI and adding a title
@@ -127,6 +142,11 @@ public class GameInterface extends JFrame {
         // Setting the icon image of the application
         setIconImage(Objects.requireNonNull(loadImage("src/assets/app-icon.PNG")).getImage());
 
+        // Initializing Sunny's eating sprites
+        for(int i = 0; i < 9; i++) {
+            sunnyEat[i] = new ImageIcon("src/assets/eat-" + i + ".PNG");
+        }
+
         // Set initial state for Sleep JButton
         prefs = Preferences.userNodeForPackage(GameInterface.class);
 
@@ -135,9 +155,11 @@ public class GameInterface extends JFrame {
 
         // Retrieve stored state for the squid's current status
         currentState = prefs.getInt(CURRENT_STATE, squid.getCurrentState());
+        System.out.println(currentState);
 
         // Call the method to refresh display
         actions.sleep(isSleepButtonOn, fullness, energy, mood);
+        addDraggableComponents();
         addCustomComponents();
         addInteractionButtons();
         addStatusBox();
@@ -174,6 +196,19 @@ public class GameInterface extends JFrame {
     public void customizeApplicationCursor() {
         Image cursor = getToolkit().getImage("src/assets/cursor.PNG");
         setCursor(Toolkit.getDefaultToolkit().createCustomCursor(cursor, new Point(0,0), "Default"));
+    }
+
+    public static BufferedImage loadBufferedImage(String resourcePath) {
+        try {
+            // Reads the image file from the path given
+            // Returns an image icon so the component can render it
+            return ImageIO.read(new File(resourcePath));
+
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Could not find resource");
+        return null;
     }
 
     // Method to retrieve image from the asset folder
@@ -270,7 +305,18 @@ public class GameInterface extends JFrame {
         eatButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                actions.eat(fullness);
+                // Ensure that this action cannot be performed unless the squid is IDLE
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
+                    // Set current state to 'Eating'
+                    prefs.putInt(CURRENT_STATE, Squid.EATING);
+
+                    // Spawn the draggable fish
+                    squidFood.setBounds(226, 128, 92, 45);
+                    squidFood.setVisible(true);
+
+                    // Change current state back to 'Idle'
+                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
+                }
             }
         });
         add(eatButton);
@@ -357,10 +403,93 @@ public class GameInterface extends JFrame {
         sunnyTheSquid.setBounds(32,87, 267, 280);
 
         // Change the cursor when hovering over this component
-        Image petting = getToolkit().getImage("src/assets/petting.PNG");
         sunnyTheSquid.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
 
         add(sunnyTheSquid);
+    }
+
+    public void addDraggableComponents() {
+        squidFood.setBounds(226, 128, 92, 45);
+
+        // Setting the component's visibility to 'false' as it will only show when the 'Eat' button is clicked
+        squidFood.setVisible(false);
+
+        // Change the cursor when hovering over this component
+        squidFood.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
+
+        // Adding mouse listener to the 'Squid Food' component in order to make it a draggable component
+        squidFood.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // Returns ABSOLUTE coordinate of the user's screen
+                screenX = e.getXOnScreen();
+                screenY = e.getYOnScreen();
+
+                // Get coordinate of the COMPONENT ORIGIN
+                myX = squidFood.getX();
+                myY = squidFood.getY();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // Get mouse position relative to the squid sprite
+                int finalX = e.getXOnScreen() - sunnyTheSquid.getLocationOnScreen().x;
+                int finalY = e.getYOnScreen() - sunnyTheSquid.getLocationOnScreen().y;
+
+                // Check that the mouse is over an opaque pixel before allowing the component to be dropped
+                if(sunnyTheSquid.getBounds().contains(squidFood.getBounds()) && isOverOpaquePixel(finalX, finalY)) {
+                    squidFood.setVisible(false); // Hide the squid food
+                    actions.eat(fullness, sunnyEat); // Calls 'eat' method to change the sprite
+                }
+            }
+        });
+
+        // Add mouse motion to set the new location of the component when it is DRAGGED
+        squidFood.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // Calculates the DIFFERENCE between the first time the component was clicked to the area it was dragged to
+                int deltaX = e.getXOnScreen() - screenX;
+                int deltaY = e.getYOnScreen() - screenY;
+
+                // Add delta coordinates to current coordinates and change the location of the component to the new location
+                squidFood.setLocation(myX + deltaX, myY + deltaY);
+
+                // If hovering over Sunny's sprite, change the GIF to a buffered image
+                if(sunnyTheSquid.getBounds().intersects(squidFood.getBounds())) {
+                    // Change GIF to static image
+                    sunnyTheSquid.setIcon(sunnyEat[0]);
+                }
+
+                else {
+                    // Restore GIF when not hovering
+                    sunnyTheSquid.setIcon(sunnyIdle);
+                }
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+
+            }
+        });
+
+        add(squidFood);
+
+    }
+
+    private boolean isOverOpaquePixel(int imgX, int imgY) {
+        // Prevent out of bound errors
+        if(imgX < 0 || imgY < 0 || imgX >= sunnyTheSquid.getWidth() || imgY >= sunnyTheSquid.getHeight()) {
+            return false;
+        }
+
+        // Get the pixel color of the image
+        // The buffered image here is the same image as the static image
+        int pixel = sunnyEatImg.getRGB(imgX, imgY);
+
+        // Extract alpha channel (transparency)
+        int alpha = (pixel >> 24) & 0xff;
+        return alpha > 0;     // Only allow drop if alpha > 0 (not transparent)
     }
 
     // Saves the last time the status bar update method ran
@@ -447,6 +576,7 @@ public class GameInterface extends JFrame {
     }
 
     // Cancels previous tasks in order to run new ones
+    // TODO: Edit this method so that it takes in a parameter of a ScheduledFuture and only resets one of them instead of all
     private void restartTasks() {
         // If tasks are still running (not null) then cancel them in order to start new tasks
         if(scheduledFullness != null && scheduledEnergy != null && scheduledMood != null) {
@@ -459,5 +589,4 @@ public class GameInterface extends JFrame {
         // Start new tasks
         startScheduledTasks(INTERVAL_MINUTES); // Restart with default interval
     }
-
 }

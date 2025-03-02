@@ -4,6 +4,17 @@ import java.time.LocalDateTime;
 public class Actions {
     Squid squid = new Squid();
 
+    // The frames per second for the animation
+    int fps = 3;
+
+    // The amount of time in between each frame - in this case it's 333 ms per frame
+    int delay = 1000 / fps;
+
+    // The sprite starts at 0, and the frames will begin to switch from there
+    int currFrame = 0;
+
+    final int TOTAL_FRAMES = 9;
+
     /* When the 'Sleep' JButton is clicked, it will change the GUI to a dark version and change the sprite of the squid.
      * It will then set the current state of the Squid object accordingly
      * @param isButtonON  - Checks if the 'Sleep' JButton is switched on
@@ -60,8 +71,39 @@ public class Actions {
 
     }
 
-    public void eat(StatusBar fullness) {
+    public void eat(StatusBar fullness, Icon[] sunnyEat) {
+        System.out.println("Eat");
+
+        // Plays brief eating animation for Squid
+        // Uses a thread to animate the sprite
+        new Thread(() -> {
+            // Will operate as long as the currFrame is less than the index of the Icon array
+            while(currFrame < TOTAL_FRAMES) {
+                // Switch the label
+                GameInterface.sunnyTheSquid.setIcon(sunnyEat[currFrame]);
+
+                // Increment currFrame
+                currFrame++;
+
+                try {
+                    Thread.sleep(delay); // Pause the thread for frame rate
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Switch back to the original GIF
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
+
+            // Reset the frames for the next animation
+            currFrame = 0;
+
+        }).start();
+
+        // Updates status bar for the squid
         updateStatusBar(fullness, 1, Squid.EATING);
+
+        // TODO: Reset the scheduled tasks (only for the fullness bar)
     }
 
     public void play() {
@@ -111,18 +153,19 @@ public class Actions {
 
             if(currentState == Squid.SLEEPING) {
                 System.out.println("Executing Sleep Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+                // Whenever this method is called, keep track of the execution time
+                GameInterface.saveExecutionTime();
             }
 
             else if(currentState == Squid.IDLE){
                 System.out.println("Executing Idle Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+                // Whenever this method is called, keep track of the execution time
+                GameInterface.saveExecutionTime();
             }
 
             else {
                 System.out.println("Executing Eating Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
             }
         }
-
-        // Whenever this method is called, keep track of the execution time
-        GameInterface.saveExecutionTime();
     }
 }
