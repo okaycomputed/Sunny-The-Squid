@@ -198,6 +198,7 @@ public class GameInterface extends JFrame {
         setCursor(Toolkit.getDefaultToolkit().createCustomCursor(cursor, new Point(0,0), "Default"));
     }
 
+    // Retrieves an image from asset folder as a BufferedImage
     public static BufferedImage loadBufferedImage(String resourcePath) {
         try {
             // Reads the image file from the path given
@@ -211,7 +212,7 @@ public class GameInterface extends JFrame {
         return null;
     }
 
-    // Method to retrieve image from the asset folder
+    // Method to retrieve image from the asset folder as an ImageIcon
     public static ImageIcon loadImage(String resourcePath) {
         try {
             // Reads the image file from the path given
@@ -440,6 +441,12 @@ public class GameInterface extends JFrame {
                 if(sunnyTheSquid.getBounds().contains(squidFood.getBounds()) && isOverOpaquePixel(finalX, finalY)) {
                     squidFood.setVisible(false); // Hide the squid food
                     actions.eat(fullness, sunnyEat); // Calls 'eat' method to change the sprite
+
+                    // Reset the scheduled tasks (only for the fullness bar)
+                    scheduledFullness.cancel(false);
+
+                    // Restart scheduled task
+                    scheduledFullness = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
                 }
             }
         });

@@ -98,12 +98,11 @@ public class Actions {
             // Reset the frames for the next animation
             currFrame = 0;
 
+            // Updates status bar for the squid
+            updateStatusBar(fullness, 1, Squid.EATING);
+
         }).start();
 
-        // Updates status bar for the squid
-        updateStatusBar(fullness, 1, Squid.EATING);
-
-        // TODO: Reset the scheduled tasks (only for the fullness bar)
     }
 
     public void play() {
