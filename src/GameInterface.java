@@ -324,6 +324,17 @@ public class GameInterface extends JFrame {
 
         // Adding button for 'Play' action
         playButton.setBounds(172, 48, 59, 39);
+        playButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                // Instantiating pong interface JFrame
+                PongInterface pong = new PongInterface(GameInterface.this);
+                pong.setVisible(true);
+                pong.startGame();
+
+            }
+        });
         add(playButton);
 
         // Adding button for 'Bathe' action

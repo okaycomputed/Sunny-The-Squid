@@ -105,7 +105,19 @@ public class Actions {
 
     }
 
-    public void play() {
+    // Playing will increase mood by 2 points and decrease energy by 1 point
+    public void play(StatusBar mood, StatusBar energy) {
+        System.out.println("Play");
+
+        // Set the current state of the squid
+        squid.setCurrentState(Squid.PLAYING);
+
+        // Update the mood status bar
+        updateStatusBar(mood, 2, Squid.PLAYING);
+
+        // Update the energy status bar
+        updateStatusBar(energy, -1, Squid.PLAYING);
+
 
     }
 

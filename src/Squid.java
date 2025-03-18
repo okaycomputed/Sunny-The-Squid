@@ -9,7 +9,7 @@ public class Squid {
 
     // Sunny's cleanliness increases when he is BATHING (however, this is not reflected in the status bar, it
     // will be reflected in dust particles generating around his sprite)
-    // Sunny will turn dirty after playing TWICE or being IDLE for more than a day
+    // Sunny will turn dirty after being IDLE for more than a day
     private boolean isClean;
 
     private int currentState;
@@ -17,7 +17,7 @@ public class Squid {
     public Squid() {
         this.isClean = false;
 
-        // Setting default squid state
+        // Setting default state
         this.currentState = IDLE;
     }
 
