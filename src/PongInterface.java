@@ -6,15 +6,19 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class PongInterface extends JFrame implements KeyListener, ActionListener {
-    public static final int BORDER_HEIGHT  = 390;
-    public static final int BORDER_WIDTH   = 320;
     public static final int MINIMUM_X      = 5;
+    public static final int MINIMUM_Y      = 36;
+    public static final int BORDER_WIDTH   = 320;
+    public static final int BORDER_HEIGHT  = 430 - MINIMUM_X;
 
     private JFrame gameInterface;
     private Timer gameTimer;
 
     int sunnyScore  = 0;
     int playerScore = 0;
+
+    boolean leftPressed = false;
+    boolean rightPressed = false;
 
     ImageIcon backdropImg = new ImageIcon("src/assets/backdrop.PNG");
     JLabel backdrop = new JLabel(backdropImg);
@@ -38,6 +42,11 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     ImageIcon sunnyImg = new ImageIcon("src/assets/sunny-paddle.png");
     ImageIcon ballImg = new ImageIcon("src/assets/pong-ball.png");
 
+    ImageIcon[] scores = new ImageIcon[6];
+
+    JLabel sunnyScoreVal;
+    JLabel playerScoreVal;
+
     Paddle playerPaddle, sunnyPaddle;
     Ball pongBall;
 
@@ -57,16 +66,22 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         setFocusable(true);
         addKeyListener(this);
 
+        // Instantiating score ImageIcons
+        for(int i = 0; i < scores.length; i++) {
+            scores[i] = new ImageIcon("src/assets/score-" + i + ".png");
+        }
+
         // Instantiating paddle and ball object for the game
         playerPaddle = new Paddle(119, 413, playerImg);
         sunnyPaddle = new Paddle(119, 38, sunnyImg);
         pongBall = new Ball(ballImg);
 
         // Instantiating internal game timer
-        gameTimer = new Timer(10, this);
+        gameTimer = new Timer(8, this);
 
         addGameTitleBar();
         addGameComponents();
+        addScoreValues();
 
         add(backdrop);
 
@@ -128,6 +143,21 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         add(sunnyPaddle);
     }
 
+    public void addScoreValues() {
+        sunnyScoreVal = new JLabel(scores[0]);
+        playerScoreVal = new JLabel(scores[0]);
+
+        sunnyScoreVal.setBounds(13, 190, 28, 32);
+        playerScoreVal.setBounds(13, 236, 28, 32);
+
+        add(sunnyScoreVal);
+        add(playerScoreVal);
+    }
+
+    public void updateScore(JLabel scoreVal, int newScore) {
+        scoreVal.setIcon(scores[newScore]);
+    }
+
     public void startGame() {
         gameTimer.start();
     }
@@ -140,22 +170,27 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     @Override
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            playerPaddle.movePaddle(-20, WIDTH);
-            System.out.println("Left");
+            leftPressed = true;
         }
         if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            playerPaddle.movePaddle(20, WIDTH);
-            System.out.println("Right");
+            rightPressed = true;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-
+        if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+            leftPressed = false;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+            rightPressed = false;
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        // Pauses the game timer as the game has ended
+        // TODO: Add an ending screen to display the WINNER and exit the application accordingly
         if(playerScore >= 5 || sunnyScore >= 5) {
             gameTimer.stop();
             return;
@@ -164,6 +199,18 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         // Moves the ball
         pongBall.moveBall();
 
+        // Shifts paddle left
+        // Used boolean values instead of directly assigning the 'movePaddle' method to
+        // the key listener to ensure smoothness in movement
+        if(leftPressed) {
+            playerPaddle.movePaddle(-5);
+        }
+
+        // Shifts paddle right
+        if(rightPressed) {
+            playerPaddle.movePaddle(5);
+        }
+
         // Ball bounces off LEFT and RIGHT borders
         // Checking the X value of the ball to ensure if it is
         // 1. Out of the (lower) bound of the border
@@ -171,5 +218,45 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         if(pongBall.getX() <= MINIMUM_X || pongBall.getX() >= BORDER_WIDTH - pongBall.BALL_SIZE) {
             pongBall.bounceHorizontal();
         }
+
+        // Bounces the ball when hitting either PADDLE
+        if(pongBall.getBounds().intersects(playerPaddle.getBounds()) || pongBall.getBounds().intersects(sunnyPaddle.getBounds())) {
+            pongBall.bounceVertical();
+        }
+
+        /* If the ball touches any of the vertical bounds, the game will reset
+           and points will be awarded to the corresponding winner */
+        // When the ball is less than the minimum Y value, it indicates that it exceeded the bound in SUNNY'S SIDE
+        // So, the player gets a point and the game resets
+        if(pongBall.getY() == MINIMUM_Y) {
+            // Increments score
+            playerScore++;
+
+            // Updates value on interface
+            updateScore(playerScoreVal, playerScore);
+
+            // Resets the ball to the original position
+            pongBall.reset();
+        }
+
+        // Ball flies off player's side, Sunny gets a point
+        else if(pongBall.getY() == (BORDER_HEIGHT - pongBall.BALL_SIZE)) {
+            sunnyScore++;
+            updateScore(sunnyScoreVal, sunnyScore);
+            pongBall.reset();
+        }
+
+        // AI control for Sunny's paddle
+        // When the CENTER of Sunny's paddle is MORE than the x-value of the ball,
+        // it will move LEFT to reach the ball
+        if(sunnyPaddle.getX() + (sunnyPaddle.getWidth()/2) > pongBall.getX()) {
+            sunnyPaddle.movePaddle(-2);
+        }
+
+        // When it is LESS than the x-value of the ball, it will move RIGHT
+        else if(sunnyPaddle.getY() + (sunnyPaddle.getWidth()/2) < pongBall.getX()) {
+            sunnyPaddle.movePaddle(2);
+        }
+
     }
 }

@@ -11,7 +11,7 @@ public class Paddle extends JLabel{
 
     }
 
-    public void movePaddle(int moveAmt, int boundary) {
+    public void movePaddle(int moveAmt) {
         // Ensures that the paddle doesn't move out of bound of the pong board
         int minX = PongInterface.MINIMUM_X;
         int maxX = minX + PongInterface.BORDER_WIDTH - WIDTH;
