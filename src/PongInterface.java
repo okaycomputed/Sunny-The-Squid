@@ -219,16 +219,34 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
             pongBall.bounceHorizontal();
         }
 
-        // Bounces the ball when hitting either PADDLE
-        if(pongBall.getBounds().intersects(playerPaddle.getBounds()) || pongBall.getBounds().intersects(sunnyPaddle.getBounds())) {
-            pongBall.bounceVertical();
+        // Paddle collision logic
+        if (pongBall.getBounds().intersects(sunnyPaddle.getBounds())) {
+            // Checks if the ball is in bounds of the paddle's x-value
+            if (pongBall.getX() + pongBall.BALL_SIZE >= sunnyPaddle.getX() &&
+                    pongBall.getX() <= sunnyPaddle.getX() + sunnyPaddle.WIDTH) {
+                pongBall.bounceVertical();
+                pongBall.setLocation(pongBall.getX(), sunnyPaddle.getY() + sunnyPaddle.getHeight() + 1); // Pushes ball down
+            }
+        }
+
+        if (pongBall.getBounds().intersects(playerPaddle.getBounds())) {
+            if (pongBall.getX() + pongBall.BALL_SIZE >= playerPaddle.getX() &&
+                    pongBall.getX() <= playerPaddle.getX() + playerPaddle.WIDTH) {
+                pongBall.bounceVertical(); // Bounce normally if hitting the top or bottom
+
+                // Ensure the new y-value does not go out of bounds (only applicable for player paddle)
+                int newY = playerPaddle.getY() - pongBall.getHeight() - 1;
+                if(newY > BORDER_HEIGHT) {
+                    pongBall.setLocation(pongBall.getX(), playerPaddle.getY() - pongBall.getHeight() - 1); // Pushes ball upward
+                }
+            }
         }
 
         /* If the ball touches any of the vertical bounds, the game will reset
            and points will be awarded to the corresponding winner */
         // When the ball is less than the minimum Y value, it indicates that it exceeded the bound in SUNNY'S SIDE
         // So, the player gets a point and the game resets
-        if(pongBall.getY() == MINIMUM_Y) {
+        if(pongBall.getY() <= MINIMUM_Y) {
             // Increments score
             playerScore++;
 
@@ -240,7 +258,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         }
 
         // Ball flies off player's side, Sunny gets a point
-        else if(pongBall.getY() == (BORDER_HEIGHT - pongBall.BALL_SIZE)) {
+        else if(pongBall.getY() >= (BORDER_HEIGHT - pongBall.BALL_SIZE)) {
             sunnyScore++;
             updateScore(sunnyScoreVal, sunnyScore);
             pongBall.reset();
@@ -250,13 +268,12 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         // When the CENTER of Sunny's paddle is MORE than the x-value of the ball,
         // it will move LEFT to reach the ball
         if(sunnyPaddle.getX() + (sunnyPaddle.getWidth()/2) > pongBall.getX()) {
-            sunnyPaddle.movePaddle(-2);
+            sunnyPaddle.movePaddle(-1);
         }
 
         // When it is LESS than the x-value of the ball, it will move RIGHT
         else if(sunnyPaddle.getY() + (sunnyPaddle.getWidth()/2) < pongBall.getX()) {
-            sunnyPaddle.movePaddle(2);
+            sunnyPaddle.movePaddle(1);
         }
-
     }
 }

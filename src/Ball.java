@@ -26,7 +26,7 @@ public class Ball extends JLabel {
         directionX = -directionX;
     }
 
-    // Ball will bounce off paddles
+    // Ball will bounce OFF paddles
     public void bounceVertical() {
         directionY = -directionY;
     }
