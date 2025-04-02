@@ -14,6 +14,8 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     private JFrame gameInterface;
     private Timer gameTimer;
 
+    Actions actions = new Actions();
+
     int sunnyScore  = 0;
     int playerScore = 0;
 
@@ -42,10 +44,19 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     ImageIcon sunnyImg = new ImageIcon("src/assets/sunny-paddle.png");
     ImageIcon ballImg = new ImageIcon("src/assets/pong-ball.png");
 
+    ImageIcon gameOverImg = new ImageIcon("src/assets/game-over-banner.png");
+    JLabel gameOverBanner = new JLabel(gameOverImg);
+
+    ImageIcon returnImg = new ImageIcon("src/assets/return.png");
+    JButton returnButton = new JButton(returnImg);
+    JLabel returnButtonText = new JLabel("Return");
+
     ImageIcon[] scores = new ImageIcon[6];
 
     JLabel sunnyScoreVal;
     JLabel playerScoreVal;
+
+    JLabel winnerText = new JLabel("Winner");
 
     Paddle playerPaddle, sunnyPaddle;
     Ball pongBall;
@@ -80,6 +91,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         gameTimer = new Timer(8, this);
 
         addGameTitleBar();
+        addEndScreen();
         addGameComponents();
         addScoreValues();
 
@@ -154,6 +166,59 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         add(playerScoreVal);
     }
 
+    public void addEndScreen() {
+        // Game over banner
+        gameOverBanner.setBounds(79, 180, 173, 93);
+        gameOverBanner.setVisible(false);
+
+        // Text on the 'Return' button
+        returnButtonText.setBounds(137, 235, 60, 15);
+        returnButtonText.setFont(gameInterface.getFont().deriveFont(Font.PLAIN, 16));
+        returnButtonText.setVisible(false);
+
+        // Return button
+        returnButton.setBounds(127, 231, 77, 27);
+        returnButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Disposes all the current GUI components
+                dispose();
+                // Reveals the main screen/home screen
+                gameInterface.setVisible(true);
+            }
+        });
+        returnButton.setVisible(false);
+
+        // Text to announce winner
+        winnerText.setFont(gameInterface.getFont().deriveFont(Font.PLAIN, 24));
+        winnerText.setVisible(false);
+
+        add(winnerText);
+        add(returnButtonText);
+        add(returnButton);
+        add(gameOverBanner);
+    }
+
+    public void findWinner() {
+        // Add winning text depending on who won
+        if(playerScore == 5) {
+            winnerText.setText("Player Wins!");
+            winnerText.setBounds(95, 192, 142, 32);
+        }
+
+        else {
+            winnerText.setText("Sunny Wins!");
+            winnerText.setBounds(99, 192, 135, 32);
+        }
+    }
+
+    public void showEndScreen() {
+        winnerText.setVisible(true);
+        returnButton.setVisible(true);
+        returnButtonText.setVisible(true);
+        gameOverBanner.setVisible(true);
+    }
+
     public void updateScore(JLabel scoreVal, int newScore) {
         scoreVal.setIcon(scores[newScore]);
     }
@@ -190,8 +255,12 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     @Override
     public void actionPerformed(ActionEvent e) {
         // Pauses the game timer as the game has ended
-        // TODO: Add an ending screen to display the WINNER and exit the application accordingly
         if(playerScore >= 5 || sunnyScore >= 5) {
+            findWinner();
+            showEndScreen();
+            // Update Sunny's stats
+            // Ensure that points are not given if the game is not completed
+            actions.play(GameInterface.mood, GameInterface.energy);
             gameTimer.stop();
             return;
         }
@@ -220,30 +289,37 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         }
 
         // Paddle collision logic
-        if (pongBall.getBounds().intersects(sunnyPaddle.getBounds())) {
+        // Checking if the y-axis of the paddle and the ball are touching each other
+        if (pongBall.getY() <= sunnyPaddle.getY() + sunnyPaddle.HEIGHT) {
+
             // Checks if the ball is in bounds of the paddle's x-value
             if (pongBall.getX() + pongBall.BALL_SIZE >= sunnyPaddle.getX() &&
                     pongBall.getX() <= sunnyPaddle.getX() + sunnyPaddle.WIDTH) {
                 pongBall.bounceVertical();
-                pongBall.setLocation(pongBall.getX(), sunnyPaddle.getY() + sunnyPaddle.getHeight() + 1); // Pushes ball down
+
+                // Places the ball outside the paddle
+                pongBall.setLocation(pongBall.getX(), sunnyPaddle.getY() + sunnyPaddle.HEIGHT + 1); // Pushes ball down
             }
         }
 
-        if (pongBall.getBounds().intersects(playerPaddle.getBounds())) {
+        // The bottom of the ball is more than or equals to the paddle's top - Implies collision
+        if (pongBall.getY() + pongBall.BALL_SIZE >= playerPaddle.getY() &&
+                // Ensures the position was above
+                pongBall.getY() + pongBall.BALL_SIZE - pongBall.directionY < playerPaddle.getY()) {
+
+            // Checking the x-axis of the paddle
             if (pongBall.getX() + pongBall.BALL_SIZE >= playerPaddle.getX() &&
                     pongBall.getX() <= playerPaddle.getX() + playerPaddle.WIDTH) {
-                pongBall.bounceVertical(); // Bounce normally if hitting the top or bottom
 
-                // Ensure the new y-value does not go out of bounds (only applicable for player paddle)
-                int newY = playerPaddle.getY() - pongBall.getHeight() - 1;
-                if(newY > BORDER_HEIGHT) {
-                    pongBall.setLocation(pongBall.getX(), playerPaddle.getY() - pongBall.getHeight() - 1); // Pushes ball upward
-                }
+                pongBall.bounceVertical(); // Bounce when hitting the paddle
+
+                // Ensure that the ball is placed outside the paddle
+                pongBall.setLocation(pongBall.getX(), playerPaddle.getY() - pongBall.BALL_SIZE - 1);
             }
         }
 
         /* If the ball touches any of the vertical bounds, the game will reset
-           and points will be awarded to the corresponding winner */
+           and points will be awarded to the corresponding winnerText */
         // When the ball is less than the minimum Y value, it indicates that it exceeded the bound in SUNNY'S SIDE
         // So, the player gets a point and the game resets
         if(pongBall.getY() <= MINIMUM_Y) {

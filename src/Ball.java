@@ -35,5 +35,4 @@ public class Ball extends JLabel {
         this.setLocation(X_START, Y_START);
         bounceVertical();
     }
-
 }

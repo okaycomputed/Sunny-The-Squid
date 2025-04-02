@@ -23,5 +23,4 @@ public class Paddle extends JLabel{
         // Sets new location for the paddle
         this.setLocation(newX, getY());
     }
-
 }

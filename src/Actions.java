@@ -109,15 +109,11 @@ public class Actions {
     public void play(StatusBar mood, StatusBar energy) {
         System.out.println("Play");
 
-        // Set the current state of the squid
-        squid.setCurrentState(Squid.PLAYING);
-
         // Update the mood status bar
         updateStatusBar(mood, 2, Squid.PLAYING);
 
         // Update the energy status bar
         updateStatusBar(energy, -1, Squid.PLAYING);
-
 
     }
 
@@ -153,7 +149,7 @@ public class Actions {
         int newValue = statusBar.getStatValue() + changeValue;
 
         // If the new value is 0, 1, 2, 3, 4, 5, 6, or 7, update accordingly
-        // If not, ignore it
+        // An 'overflow' of stat points will only result in the max value possible (7)
         if(newValue >= 0 && newValue <= 7) {
 
             // Update stat value in corresponding StatusBar object
@@ -164,7 +160,7 @@ public class Actions {
 
             if(currentState == Squid.SLEEPING) {
                 System.out.println("Executing Sleep Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
-                // Whenever this method is called, keep track of the execution time
+                // Whenever this method is called, keep track of the execution time (only for idle/sleep tasks)
                 GameInterface.saveExecutionTime();
             }
 
@@ -174,9 +170,15 @@ public class Actions {
                 GameInterface.saveExecutionTime();
             }
 
-            else {
+            else if (currentState == Squid.EATING){
                 System.out.println("Executing Eating Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
+                // Not applicable for eating tasks as they are meant to be completed without closing the app
             }
+        }
+
+        else if(newValue > 7) {
+            statusBar.setStatValue(7);
+            statusBar.setIcon(new ImageIcon(getResourcePath(statusBar.getStatValue(), currentState)));
         }
     }
 }

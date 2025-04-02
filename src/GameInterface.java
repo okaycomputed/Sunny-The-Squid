@@ -22,11 +22,6 @@ public class GameInterface extends JFrame {
     Actions actions = new Actions();
     Squid squid = new Squid();
 
-    // Adding indicator bar JLabels
-    StatusBar fullness = new StatusBar(FULLNESS_BAR);
-    StatusBar energy = new StatusBar(ENERGY_BAR);
-    StatusBar mood = new StatusBar(MOOD_BAR);
-
     // Storing user-preferences
     static Preferences prefs;
 
@@ -78,18 +73,23 @@ public class GameInterface extends JFrame {
 
     // Preference keys
     // To save the state of the sleep button
-    private static final String IS_BUTTON_ON = "IsButtonOn";
+    static final String IS_BUTTON_ON = "IsButtonOn";
 
     // To save the current state of the squid object
-    private static final String CURRENT_STATE = "SquidState";
+    static final String CURRENT_STATE = "SquidState";
 
     // To save the points in each status bar
-    private static final String FULLNESS_BAR = "Fullness";
-    private static final String ENERGY_BAR = "Energy";
-    private static final String MOOD_BAR = "Mood";
+    static final String FULLNESS_BAR = "Fullness";
+    static final String ENERGY_BAR = "Energy";
+    static final String MOOD_BAR = "Mood";
 
     // Saves the last time the bar was updated
-    private static final String LAST_UPDATE_TIME = "LastUpdateTime";
+    static final String LAST_UPDATE_TIME = "LastUpdateTime";
+
+    // Adding indicator bar JLabels
+    static StatusBar fullness = new StatusBar(FULLNESS_BAR);
+    static StatusBar energy = new StatusBar(ENERGY_BAR);
+    static StatusBar mood = new StatusBar(MOOD_BAR);
 
     // Initializing executor to execute certain tasks after a specified time interval
     // In this case, after every hour that the squid is idle, all stats will decrease by one point
@@ -264,40 +264,42 @@ public class GameInterface extends JFrame {
         sleepButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // If the button is NOT on, on click it will be switched to ON
-                if(!isSleepButtonOn) {
-                    isSleepButtonOn = true;
+                // Ensure that this action cannot be performed unless the squid is IDLE or already SLEEPING
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) {
+                    // If the button is NOT on, on click it will be switched to ON
+                    if (!isSleepButtonOn) {
+                        isSleepButtonOn = true;
 
-                    // Call 'sleep' method in actions to change the UI
-                    actions.sleep(true, fullness, energy, mood);
+                        // Call 'sleep' method in actions to change the UI
+                        actions.sleep(true, fullness, energy, mood);
 
-                    // Keep button state inside preferences
-                    prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
+                        // Keep button state inside preferences
+                        prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
 
-                    // Save the current state of the squid inside preferences
-                    prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
+                        // Save the current state of the squid inside preferences
+                        prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
 
-                    System.out.println("Sunny began sleeping at " + LocalDateTime.now().format(timeFormatter));
+                        System.out.println("Sunny began sleeping at " + LocalDateTime.now().format(timeFormatter));
+                    }
 
+                    else {
+                        isSleepButtonOn = false;
+                        actions.sleep(false, fullness, energy, mood);
+
+                        prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
+                        prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
+                        System.out.println("Sunny is idle at " + LocalDateTime.now().format(timeFormatter));
+                    }
+
+                    // Sets the current tasks to be carried out
+                    setCurrentTasks();
+
+                    // Cancels old tasks in order to execute new tasks
+                    restartTasks();
                 }
-
-                else {
-                    isSleepButtonOn = false;
-                    actions.sleep(false, fullness, energy, mood);
-
-                    prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
-                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
-
-                    System.out.println("Sunny is idle at " + LocalDateTime.now().format(timeFormatter));
-
-                }
-
-                // Sets the current tasks to be carried out
-                setCurrentTasks();
-
-                // Cancels old tasks in order to execute new tasks
-                restartTasks();
             }
+
         });
         add(sleepButton);
 
@@ -309,14 +311,13 @@ public class GameInterface extends JFrame {
                 // Ensure that this action cannot be performed unless the squid is IDLE
                 if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
                     // Set current state to 'Eating'
+                    // TODO: Fix a glitch in which exiting the program while eating will
+                    //  cause the squid to stay 'eating' forever, no longer carrying out idle tasks
                     prefs.putInt(CURRENT_STATE, Squid.EATING);
 
                     // Spawn the draggable fish
                     squidFood.setBounds(226, 128, 92, 45);
                     squidFood.setVisible(true);
-
-                    // Change current state back to 'Idle'
-                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
                 }
             }
         });
@@ -327,12 +328,32 @@ public class GameInterface extends JFrame {
         playButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dispose();
-                // Instantiating pong interface JFrame
-                PongInterface pong = new PongInterface(GameInterface.this);
-                pong.setVisible(true);
-                pong.startGame();
+                // Ensure that this action cannot be performed unless the squid is IDLE
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
+                    // Set current state to 'Playing'
+                    prefs.putInt(CURRENT_STATE, Squid.PLAYING);
 
+                    // Dispose of current GUI components
+                    dispose();
+                    // Instantiating pong interface JFrame
+                    PongInterface pong = new PongInterface(GameInterface.this);
+
+                    // Show the pong interface
+                    pong.setVisible(true);
+                    pong.startGame();
+
+                    // Set state back to IDLE
+                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
+                    // Reset scheduled tasks (both mood and energy)
+                    // Cancels tasks
+                    scheduledEnergy.cancel(false);
+                    scheduledMood.cancel(false);
+
+                    // Reset tasks at default interval
+                    scheduledEnergy = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
+                    scheduledMood = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
+                }
             }
         });
         add(playButton);
@@ -426,6 +447,11 @@ public class GameInterface extends JFrame {
         // Setting the component's visibility to 'false' as it will only show when the 'Eat' button is clicked
         squidFood.setVisible(false);
 
+        // However, if you exit the program without consuming the fish, it will spawn in its default location again
+        if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.EATING) {
+            squidFood.setVisible(true);
+        }
+
         // Change the cursor when hovering over this component
         squidFood.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
 
@@ -456,8 +482,11 @@ public class GameInterface extends JFrame {
                     // Reset the scheduled tasks (only for the fullness bar)
                     scheduledFullness.cancel(false);
 
-                    // Restart scheduled task
+                    // Restart scheduled task and run at default interval
                     scheduledFullness = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
+
+                    // Change current state back to 'Idle'
+                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
                 }
             }
         });
@@ -593,8 +622,7 @@ public class GameInterface extends JFrame {
         }
     }
 
-    // Cancels previous tasks in order to run new ones
-    // TODO: Edit this method so that it takes in a parameter of a ScheduledFuture and only resets one of them instead of all
+    // Cancels ALL previous tasks in order to run new ones
     private void restartTasks() {
         // If tasks are still running (not null) then cancel them in order to start new tasks
         if(scheduledFullness != null && scheduledEnergy != null && scheduledMood != null) {
