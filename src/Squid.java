@@ -15,7 +15,7 @@ public class Squid {
     private int currentState;
 
     public Squid() {
-        this.isClean = false;
+        this.isClean = true;
 
         // Setting default state
         this.currentState = IDLE;

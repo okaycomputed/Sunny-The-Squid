@@ -47,9 +47,8 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     ImageIcon gameOverImg = new ImageIcon("src/assets/game-over-banner.png");
     JLabel gameOverBanner = new JLabel(gameOverImg);
 
-    ImageIcon returnImg = new ImageIcon("src/assets/return.png");
+    ImageIcon returnImg = new ImageIcon("src/assets/return.PNG");
     JButton returnButton = new JButton(returnImg);
-    JLabel returnButtonText = new JLabel("Return");
 
     ImageIcon[] scores = new ImageIcon[6];
 
@@ -171,11 +170,6 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         gameOverBanner.setBounds(79, 180, 173, 93);
         gameOverBanner.setVisible(false);
 
-        // Text on the 'Return' button
-        returnButtonText.setBounds(137, 235, 60, 15);
-        returnButtonText.setFont(gameInterface.getFont().deriveFont(Font.PLAIN, 16));
-        returnButtonText.setVisible(false);
-
         // Return button
         returnButton.setBounds(127, 231, 77, 27);
         returnButton.addActionListener(new ActionListener() {
@@ -194,7 +188,6 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         winnerText.setVisible(false);
 
         add(winnerText);
-        add(returnButtonText);
         add(returnButton);
         add(gameOverBanner);
     }
@@ -215,7 +208,6 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     public void showEndScreen() {
         winnerText.setVisible(true);
         returnButton.setVisible(true);
-        returnButtonText.setVisible(true);
         gameOverBanner.setVisible(true);
     }
 
@@ -258,9 +250,11 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         if(playerScore >= 5 || sunnyScore >= 5) {
             findWinner();
             showEndScreen();
+
             // Update Sunny's stats
             // Ensure that points are not given if the game is not completed
             actions.play(GameInterface.mood, GameInterface.energy);
+
             gameTimer.stop();
             return;
         }

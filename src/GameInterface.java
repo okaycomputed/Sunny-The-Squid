@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.prefs.Preferences;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -27,6 +29,9 @@ public class GameInterface extends JFrame {
 
     // Keeps track of the squid object's current state
     int currentState;
+
+    // Keeps track of the squid's cleanliness
+    boolean isClean;
 
     // Setting default button states
     boolean isSleepButtonOn;
@@ -65,7 +70,17 @@ public class GameInterface extends JFrame {
        over a transparent pixel */
     static BufferedImage sunnyEatImg = loadBufferedImage("src/assets/eat-0.PNG");
 
+    // Sunny's dirty GIF
+    static Icon sunnyDirty = new ImageIcon("src/assets/sunny-dirty.GIF");
+
+    // Sunny dirty IMG (for mouse hover)
+    static Icon sunnyDirtyHover = new ImageIcon("src/assets/dirty-0.PNG");
+
+    // To check pixels
+    static BufferedImage sunnyDirtyImg = loadBufferedImage("src/assets/dirty-0.PNG");
+
     static JLabel squidFood = new JLabel(loadImage("src/assets/food-1.PNG"));
+    static JLabel soap = new JLabel(loadImage("src/assets/soap.PNG"));
 
     static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
 
@@ -85,6 +100,12 @@ public class GameInterface extends JFrame {
 
     // Saves the last time the bar was updated
     static final String LAST_UPDATE_TIME = "LastUpdateTime";
+
+    // Keeps track of the squid's cleanliness
+    static final String IS_CLEAN = "IsClean";
+
+    // Keeps track of the last time the squid's cleanliness was updated
+    static final String CLEANLINESS_UPDATE_TIME = "CleanlinessTime";
 
     // Adding indicator bar JLabels
     static StatusBar fullness = new StatusBar(FULLNESS_BAR);
@@ -113,6 +134,10 @@ public class GameInterface extends JFrame {
 
     static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     static final int INTERVAL_MINUTES = 60;
+
+    Timer cleanlinessTimer;
+//    static final long ONE_DAY_MS = 24 * 60 * 60 * 1000L; // 1 day in milliseconds
+    long remainingTimeUntilDirty;
 
     // Variables to store mouse coordinates
     private volatile int screenX;
@@ -155,11 +180,22 @@ public class GameInterface extends JFrame {
 
         // Retrieve stored state for the squid's current status
         currentState = prefs.getInt(CURRENT_STATE, squid.getCurrentState());
-        System.out.println(currentState);
+
+        // Retrieve squid's cleanliness state
+        isClean = prefs.getBoolean(IS_CLEAN, squid.isClean());
+
+        // Retrieve the remaining time on the cleanliness timer
+        // Uses the daily interval as the default value
+        remainingTimeUntilDirty = prefs.getLong(CLEANLINESS_UPDATE_TIME, 10000);
 
         // Call the method to refresh display
         actions.sleep(isSleepButtonOn, fullness, energy, mood);
-        addDraggableComponents();
+
+        // Refresh squid sprite (only when it is IDLE)
+        actions.updateCleanlinessState(isClean, currentState);
+
+        addSquidFood();
+        addSoap();
         addCustomComponents();
         addInteractionButtons();
         addStatusBox();
@@ -177,6 +213,9 @@ public class GameInterface extends JFrame {
 
         // Start scheduled tasks, considering the previous execution time
         startScheduledTasks(remainingTime);
+
+        // Start cleanliness timer (only if the squid is IDLE and CLEAN)
+        startCleanlinessTimer();
 
     }
 
@@ -265,7 +304,7 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE or already SLEEPING
-                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) {
+                if((prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) && isClean) {
                     // If the button is NOT on, on click it will be switched to ON
                     if (!isSleepButtonOn) {
                         isSleepButtonOn = true;
@@ -309,10 +348,8 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
-                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && isClean) {
                     // Set current state to 'Eating'
-                    // TODO: Fix a glitch in which exiting the program while eating will
-                    //  cause the squid to stay 'eating' forever, no longer carrying out idle tasks
                     prefs.putInt(CURRENT_STATE, Squid.EATING);
 
                     // Spawn the draggable fish
@@ -329,7 +366,7 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
-                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && isClean) {
                     // Set current state to 'Playing'
                     prefs.putInt(CURRENT_STATE, Squid.PLAYING);
 
@@ -360,6 +397,20 @@ public class GameInterface extends JFrame {
 
         // Adding button for 'Bathe' action
         batheButton.setBounds(248, 48, 59, 39);
+        batheButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Ensure that this button can only be pressed when the squid is NOT CLEAN
+                if(!prefs.getBoolean(IS_CLEAN, true)) {
+                    // Set current state to 'bathing'
+                    prefs.putInt(CURRENT_STATE, Squid.BATHING);
+
+                    // Spawn soap bar
+                    soap.setBounds(226,128, 60, 40);
+                    soap.setVisible(true);
+                }
+            }
+        });
         add(batheButton);
     }
 
@@ -441,7 +492,7 @@ public class GameInterface extends JFrame {
         add(sunnyTheSquid);
     }
 
-    public void addDraggableComponents() {
+    public void addSquidFood() {
         squidFood.setBounds(226, 128, 92, 45);
 
         // Setting the component's visibility to 'false' as it will only show when the 'Eat' button is clicked
@@ -475,7 +526,7 @@ public class GameInterface extends JFrame {
                 int finalY = e.getYOnScreen() - sunnyTheSquid.getLocationOnScreen().y;
 
                 // Check that the mouse is over an opaque pixel before allowing the component to be dropped
-                if(sunnyTheSquid.getBounds().contains(squidFood.getBounds()) && isOverOpaquePixel(finalX, finalY)) {
+                if(sunnyTheSquid.getBounds().contains(squidFood.getBounds()) && isOverOpaquePixel(finalX, finalY, sunnyEatImg)) {
                     squidFood.setVisible(false); // Hide the squid food
                     actions.eat(fullness, sunnyEat); // Calls 'eat' method to change the sprite
 
@@ -521,10 +572,90 @@ public class GameInterface extends JFrame {
         });
 
         add(squidFood);
-
     }
 
-    private boolean isOverOpaquePixel(int imgX, int imgY) {
+    public void addSoap() {
+        soap.setBounds(226, 128, 60, 40);
+        soap.setVisible(false);
+
+        // However, if you exit the program without using the soap, it will spawn in its default location again
+        if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.BATHING) {
+            soap.setVisible(true);
+        }
+
+        // Change the cursor when hovering over this component
+        soap.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
+
+        soap.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // Returns ABSOLUTE coordinate of the user's screen
+                screenX = e.getXOnScreen();
+                screenY = e.getYOnScreen();
+
+                // Get coordinate of the COMPONENT ORIGIN
+                myX = soap.getX();
+                myY = soap.getY();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // Get mouse position relative to the squid sprite
+                int finalX = e.getXOnScreen() - sunnyTheSquid.getLocationOnScreen().x;
+                int finalY = e.getYOnScreen() - sunnyTheSquid.getLocationOnScreen().y;
+
+                // Check that the mouse is over an opaque pixel before allowing the component to be dropped
+                if(sunnyTheSquid.getBounds().contains(soap.getBounds()) && isOverOpaquePixel(finalX, finalY, sunnyDirtyImg)) {
+                    // Hide the soap
+                    soap.setVisible(false);
+
+                    // Changes squid sprite back to idle sprite
+                    sunnyTheSquid.setIcon(sunnyIdle);
+
+                    // Change cleanliness state
+                    prefs.putBoolean(IS_CLEAN, true);
+
+                    // Change current state back to 'Idle'
+                    prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
+                    // Reset the one-day timer
+                    resetCleanlinessTimer();
+                }
+            }
+        });
+
+        soap.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // Calculates the DIFFERENCE between the first time the component was clicked to the area it was dragged to
+                int deltaX = e.getXOnScreen() - screenX;
+                int deltaY = e.getYOnScreen() - screenY;
+
+                // Add delta coordinates to current coordinates and change the location of the component to the new location
+                soap.setLocation(myX + deltaX, myY + deltaY);
+
+                // If hovering over Sunny's sprite, change the GIF to a buffered image
+                if(sunnyTheSquid.getBounds().intersects(soap.getBounds())) {
+                    // Change GIF to static image
+                    sunnyTheSquid.setIcon(sunnyDirtyHover);
+                }
+
+                else {
+                    // Restore GIF when not hovering
+                    sunnyTheSquid.setIcon(sunnyDirty);
+                }
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+
+            }
+        });
+
+        add(soap);
+    }
+
+    private boolean isOverOpaquePixel(int imgX, int imgY, BufferedImage sunnyImg) {
         // Prevent out of bound errors
         if(imgX < 0 || imgY < 0 || imgX >= sunnyTheSquid.getWidth() || imgY >= sunnyTheSquid.getHeight()) {
             return false;
@@ -532,7 +663,7 @@ public class GameInterface extends JFrame {
 
         // Get the pixel color of the image
         // The buffered image here is the same image as the static image
-        int pixel = sunnyEatImg.getRGB(imgX, imgY);
+        int pixel = sunnyImg.getRGB(imgX, imgY);
 
         // Extract alpha channel (transparency)
         int alpha = (pixel >> 24) & 0xff;
@@ -634,5 +765,52 @@ public class GameInterface extends JFrame {
 
         // Start new tasks
         startScheduledTasks(INTERVAL_MINUTES); // Restart with default interval
+    }
+
+    // TODO: Make this timer run in the background
+    private void startCleanlinessTimer() {
+        cleanlinessTimer = new Timer();
+        cleanlinessTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                // If the squid is clean AND idle, continue running the task
+                if (prefs.getBoolean(IS_CLEAN, true) && currentState == Squid.IDLE) {
+                    System.out.println("Squid is Clean at " + remainingTimeUntilDirty);
+                    // Deduct the remaining time by a second
+                    remainingTimeUntilDirty -= 1000;
+
+                    // Save remaining time
+                    prefs.putLong(CLEANLINESS_UPDATE_TIME, remainingTimeUntilDirty);
+                }
+
+                if(remainingTimeUntilDirty <= 0) {
+                    System.out.println("Squid is Dirty");
+
+                    // Save value into preferences
+                    // After the timer, the squid becomes dirty
+                    prefs.putBoolean(IS_CLEAN, false);
+
+                    // Update squid sprite
+                    // Change the squid sprite to the dirty sprite
+                    actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), currentState);
+
+                    // Cancel the timer
+                    cleanlinessTimer.cancel();
+                }
+            }
+            // Checks at every 1 second interval
+        }, 0, 1000);
+    }
+
+    private void resetCleanlinessTimer() {
+        remainingTimeUntilDirty = 10000;
+        prefs.putLong(CLEANLINESS_UPDATE_TIME, remainingTimeUntilDirty);
+
+        if(cleanlinessTimer != null) {
+            cleanlinessTimer.cancel();
+        }
+
+        // Restart scheduled task and run at default interval
+        startCleanlinessTimer();
     }
 }

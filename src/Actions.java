@@ -117,8 +117,26 @@ public class Actions {
 
     }
 
-    public void bathe() {
+    // If the squid is not clean, change the sprite and the status of the squid
+    public void updateCleanlinessState(boolean isClean, int currentState) {
+        // If the squid is not clean, display the dirty sprite
+        if(!isClean && currentState == Squid.IDLE) {
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyDirty);
+        }
 
+        // Else, display default idle sprite
+        else if (isClean && currentState == Squid.IDLE) {
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
+        }
+    }
+
+    public void bathe(int currentState, boolean isClean) {
+        if(currentState == Squid.BATHING && !isClean) {
+            System.out.println("Bathe");
+
+            // Change the squid sprite's back to its regular idle state
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
+        }
     }
 
     /* Retrieves the resource file of the status bar according to the number of points
