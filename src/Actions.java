@@ -13,7 +13,8 @@ public class Actions {
     // The sprite starts at 0, and the frames will begin to switch from there
     int currFrame = 0;
 
-    final int TOTAL_FRAMES = 9;
+    final int TOTAL_FRAMES_EAT = 9;
+    final int TOTAL_FRAMES_BATHE = 5;
 
     /* When the 'Sleep' JButton is clicked, it will change the GUI to a dark version and change the sprite of the squid.
      * It will then set the current state of the Squid object accordingly
@@ -78,7 +79,7 @@ public class Actions {
         // Uses a thread to animate the sprite
         new Thread(() -> {
             // Will operate as long as the currFrame is less than the index of the Icon array
-            while(currFrame < TOTAL_FRAMES) {
+            while(currFrame < TOTAL_FRAMES_EAT) {
                 // Switch the label
                 GameInterface.sunnyTheSquid.setIcon(sunnyEat[currFrame]);
 
@@ -102,7 +103,6 @@ public class Actions {
             updateStatusBar(fullness, 1, Squid.EATING);
 
         }).start();
-
     }
 
     // Playing will increase mood by 2 points and decrease energy by 1 point
@@ -130,12 +130,35 @@ public class Actions {
         }
     }
 
-    public void bathe(int currentState, boolean isClean) {
+    public void bathe(int currentState, boolean isClean, Icon[] sunnyBathe) {
         if(currentState == Squid.BATHING && !isClean) {
             System.out.println("Bathe");
 
-            // Change the squid sprite's back to its regular idle state
-            GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
+            // Plays brief eating animation for Squid
+            // Uses a thread to animate the sprite
+            new Thread(() -> {
+                // Will operate as long as the currFrame is less than the index of the Icon array
+                while(currFrame < TOTAL_FRAMES_BATHE) {
+                    // Switch the label
+                    GameInterface.sunnyTheSquid.setIcon(sunnyBathe[currFrame]);
+
+                    // Increment currFrame
+                    currFrame++;
+
+                    try {
+                        Thread.sleep(delay); // Pause the thread for frame rate
+                    } catch(InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Switch back to the original GIF
+                GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
+
+                // Reset the frames for the next animation
+                currFrame = 0;
+
+            }).start();
         }
     }
 

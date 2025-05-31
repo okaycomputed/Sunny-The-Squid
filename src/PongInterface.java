@@ -130,6 +130,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
             @Override
             public void actionPerformed(ActionEvent e) {
                 dispose();
+                gameTimer.stop();
                 gameInterface.setVisible(true);
             }
         });

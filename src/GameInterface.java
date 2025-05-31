@@ -65,6 +65,9 @@ public class GameInterface extends JFrame {
     // Storing all of Sunny's eating sprites inside an array
     static Icon[] sunnyEat = new Icon[9];
 
+    // Storing all bathing sprites inside an array
+    static Icon[] sunnyBathe = new Icon[5];
+
     /* When food is hovered over the squid, it will change the sprite to a BufferedImage in order to retrieve the
        color values of the image when hovering over it - this is to prevent activating the 'eat' method when hovering
        over a transparent pixel */
@@ -104,8 +107,8 @@ public class GameInterface extends JFrame {
     // Keeps track of the squid's cleanliness
     static final String IS_CLEAN = "IsClean";
 
-    // Keeps track of the last time the squid's cleanliness was updated
-    static final String CLEANLINESS_UPDATE_TIME = "CleanlinessTime";
+    // Keeps track of the last time the squid was clean
+    static final String LAST_CLEAN_TIME = "LastClean";
 
     // Adding indicator bar JLabels
     static StatusBar fullness = new StatusBar(FULLNESS_BAR);
@@ -136,7 +139,8 @@ public class GameInterface extends JFrame {
     static final int INTERVAL_MINUTES = 60;
 
     Timer cleanlinessTimer;
-//    static final long ONE_DAY_MS = 24 * 60 * 60 * 1000L; // 1 day in milliseconds
+    static final long ONE_DAY_MS = 24 * 60 * 60 * 1000L; // 1 day in milliseconds
+    long lastCleanTime;
     long remainingTimeUntilDirty;
 
     // Variables to store mouse coordinates
@@ -172,6 +176,11 @@ public class GameInterface extends JFrame {
             sunnyEat[i] = new ImageIcon("src/assets/eat-" + i + ".PNG");
         }
 
+        // Initializing Sunny's bathing sprites
+        for(int i = 0; i < sunnyBathe.length; i++) {
+            sunnyBathe[i] = new ImageIcon("src/assets/bathe-" + i + ".PNG");
+        }
+
         // Set initial state for Sleep JButton
         prefs = Preferences.userNodeForPackage(GameInterface.class);
 
@@ -184,15 +193,30 @@ public class GameInterface extends JFrame {
         // Retrieve squid's cleanliness state
         isClean = prefs.getBoolean(IS_CLEAN, squid.isClean());
 
-        // Retrieve the remaining time on the cleanliness timer
-        // Uses the daily interval as the default value
-        remainingTimeUntilDirty = prefs.getLong(CLEANLINESS_UPDATE_TIME, 10000);
+        // Retrieve the time that the squid was last cleaned
+        lastCleanTime = prefs.getLong(LAST_CLEAN_TIME, System.currentTimeMillis());
+
+        // Retrieve the time elapsed since last cleaned
+        long timeElapsedSinceClean = System.currentTimeMillis() - lastCleanTime;
+
+        if(timeElapsedSinceClean > ONE_DAY_MS && currentState == Squid.IDLE) {
+            // Squid gets dirty
+            prefs.putBoolean(IS_CLEAN, false);
+            actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), currentState);
+            resetCleanlinessTimer();
+        }
+
+        // There is time left, continue running the timer with a new interval
+        else if(timeElapsedSinceClean < ONE_DAY_MS) {
+            long remainingTime = ONE_DAY_MS - timeElapsedSinceClean;
+            startCleanlinessTimer(remainingTime);
+        }
 
         // Call the method to refresh display
         actions.sleep(isSleepButtonOn, fullness, energy, mood);
 
         // Refresh squid sprite (only when it is IDLE)
-        actions.updateCleanlinessState(isClean, currentState);
+        actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), currentState);
 
         addSquidFood();
         addSoap();
@@ -213,9 +237,6 @@ public class GameInterface extends JFrame {
 
         // Start scheduled tasks, considering the previous execution time
         startScheduledTasks(remainingTime);
-
-        // Start cleanliness timer (only if the squid is IDLE and CLEAN)
-        startCleanlinessTimer();
 
     }
 
@@ -304,7 +325,7 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE or already SLEEPING
-                if((prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) && isClean) {
+                if((prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) && prefs.getBoolean(IS_CLEAN, true)) {
                     // If the button is NOT on, on click it will be switched to ON
                     if (!isSleepButtonOn) {
                         isSleepButtonOn = true;
@@ -348,7 +369,7 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
-                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && isClean) {
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && prefs.getBoolean(IS_CLEAN, true)) {
                     // Set current state to 'Eating'
                     prefs.putInt(CURRENT_STATE, Squid.EATING);
 
@@ -366,7 +387,7 @@ public class GameInterface extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
-                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && isClean) {
+                if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && prefs.getBoolean(IS_CLEAN, true)) {
                     // Set current state to 'Playing'
                     prefs.putInt(CURRENT_STATE, Squid.PLAYING);
 
@@ -609,11 +630,14 @@ public class GameInterface extends JFrame {
                     // Hide the soap
                     soap.setVisible(false);
 
-                    // Changes squid sprite back to idle sprite
-                    sunnyTheSquid.setIcon(sunnyIdle);
+                    // Play short cleaning animation
+                    actions.bathe(prefs.getInt(CURRENT_STATE, Squid.IDLE), prefs.getBoolean(IS_CLEAN, true), sunnyBathe);
 
                     // Change cleanliness state
                     prefs.putBoolean(IS_CLEAN, true);
+
+                    // Keep track of the last clean time
+                    prefs.putLong(LAST_CLEAN_TIME, System.currentTimeMillis());
 
                     // Change current state back to 'Idle'
                     prefs.putInt(CURRENT_STATE, Squid.IDLE);
@@ -767,20 +791,18 @@ public class GameInterface extends JFrame {
         startScheduledTasks(INTERVAL_MINUTES); // Restart with default interval
     }
 
-    // TODO: Make this timer run in the background
-    private void startCleanlinessTimer() {
+    private void startCleanlinessTimer(long remainingTime) {
         cleanlinessTimer = new Timer();
+        remainingTimeUntilDirty = remainingTime;
+
         cleanlinessTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 // If the squid is clean AND idle, continue running the task
-                if (prefs.getBoolean(IS_CLEAN, true) && currentState == Squid.IDLE) {
-                    System.out.println("Squid is Clean at " + remainingTimeUntilDirty);
+                if (prefs.getBoolean(IS_CLEAN, true) && prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE) {
+                    System.out.println("Squid will be dirty in " + remainingTimeUntilDirty + " seconds");
                     // Deduct the remaining time by a second
                     remainingTimeUntilDirty -= 1000;
-
-                    // Save remaining time
-                    prefs.putLong(CLEANLINESS_UPDATE_TIME, remainingTimeUntilDirty);
                 }
 
                 if(remainingTimeUntilDirty <= 0) {
@@ -792,7 +814,7 @@ public class GameInterface extends JFrame {
 
                     // Update squid sprite
                     // Change the squid sprite to the dirty sprite
-                    actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), currentState);
+                    actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), prefs.getInt(CURRENT_STATE, Squid.IDLE));
 
                     // Cancel the timer
                     cleanlinessTimer.cancel();
@@ -803,14 +825,11 @@ public class GameInterface extends JFrame {
     }
 
     private void resetCleanlinessTimer() {
-        remainingTimeUntilDirty = 10000;
-        prefs.putLong(CLEANLINESS_UPDATE_TIME, remainingTimeUntilDirty);
-
         if(cleanlinessTimer != null) {
             cleanlinessTimer.cancel();
         }
 
         // Restart scheduled task and run at default interval
-        startCleanlinessTimer();
+        startCleanlinessTimer(ONE_DAY_MS);
     }
 }
