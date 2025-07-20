@@ -9,7 +9,7 @@ Sunny The Squid's first build is currently avaliable on MacOS only. Support for 
 - Three physical states: Idle, Sleeping, Dirty
 - Sunny turns dirty if you leave him alone for too long
 - Animated sprites
-- 
+
 <br>
 Current snapshots:
 <br>
