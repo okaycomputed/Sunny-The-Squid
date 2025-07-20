@@ -25,23 +25,22 @@ public class Actions {
     public void sleep(boolean isButtonON, StatusBar fullness, StatusBar energy, StatusBar mood) {
         if(isButtonON) {
             // Changing the user interface to the dark theme
-            GameInterface.exit.setIcon(new ImageIcon("src/assets/dark-exit.PNG"));
-            GameInterface.minimize.setIcon(new ImageIcon("src/assets/dark-minimize.PNG"));
-            GameInterface.sleepButton.setIcon(new ImageIcon("src/assets/dark-sleep.PNG"));
-            GameInterface.eatButton.setIcon(new ImageIcon("src/assets/dark-eat.PNG"));
-            GameInterface.playButton.setIcon(new ImageIcon("src/assets/dark-play.PNG"));
-            GameInterface.batheButton.setIcon(new ImageIcon("src/assets/dark-bathe.PNG"));
+            GameInterface.exit.setIcon(GameInterface.loadImage("/assets/dark-exit.PNG"));
+            GameInterface.minimize.setIcon(GameInterface.loadImage("/assets/dark-minimize.PNG"));
+            GameInterface.sleepButton.setIcon(GameInterface.loadImage("/assets/dark-sleep.PNG"));
+            GameInterface.eatButton.setIcon(GameInterface.loadImage("/assets/dark-eat.PNG"));
+            GameInterface.playButton.setIcon(GameInterface.loadImage("/assets/dark-play.PNG"));
+            GameInterface.batheButton.setIcon(GameInterface.loadImage("/assets/dark-bathe.PNG"));
 
-            Icon sunnySleeping = new ImageIcon("src/assets/darksunny-sleeping.GIF");
-            GameInterface.sunnyTheSquid.setIcon(sunnySleeping);
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.loadGif("/assets/darksunny-sleeping.GIF"));
 
-            GameInterface.statusBlock.setIcon(new ImageIcon("src/assets/dark-statusbox.PNG"));
+            GameInterface.statusBlock.setIcon(GameInterface.loadImage("/assets/dark-statusbox.PNG"));
 
-            GameInterface.backdrop.setIcon(new ImageIcon("src/assets/dark-backdrop.PNG"));
+            GameInterface.backdrop.setIcon(GameInterface.loadImage("/assets/dark-backdrop.PNG"));
 
-            fullness.setIcon(new ImageIcon("src/assets/darkbar-" + fullness.getStatValue() + ".PNG"));
-            energy.setIcon(new ImageIcon("src/assets/darkbar-" + energy.getStatValue() + ".PNG"));
-            mood.setIcon(new ImageIcon("src/assets/darkbar-" + mood.getStatValue() + ".PNG"));
+            fullness.setIcon(GameInterface.loadImage("/assets/darkbar-" + fullness.getStatValue() + ".PNG"));
+            energy.setIcon(GameInterface.loadImage("/assets/darkbar-" + energy.getStatValue() + ".PNG"));
+            mood.setIcon(GameInterface.loadImage("/assets/darkbar-" + mood.getStatValue() + ".PNG"));
 
             squid.setCurrentState(Squid.SLEEPING);
 
@@ -49,23 +48,22 @@ public class Actions {
 
         else {
             // Changes the UI back to a light theme
-            GameInterface.exit.setIcon(new ImageIcon("src/assets/exit.PNG"));
-            GameInterface.minimize.setIcon(new ImageIcon("src/assets/minimize.PNG"));
-            GameInterface.sleepButton.setIcon(new ImageIcon("src/assets/sleep.PNG"));
-            GameInterface.eatButton.setIcon(new ImageIcon("src/assets/eat.PNG"));
-            GameInterface.playButton.setIcon(new ImageIcon("src/assets/play.PNG"));
-            GameInterface.batheButton.setIcon(new ImageIcon("src/assets/bathe.PNG"));
+            GameInterface.exit.setIcon(GameInterface.loadImage("/assets/exit.PNG"));
+            GameInterface.minimize.setIcon(GameInterface.loadImage("/assets/minimize.PNG"));
+            GameInterface.sleepButton.setIcon(GameInterface.loadImage("/assets/sleep.PNG"));
+            GameInterface.eatButton.setIcon(GameInterface.loadImage("/assets/eat.PNG"));
+            GameInterface.playButton.setIcon(GameInterface.loadImage("/assets/play.PNG"));
+            GameInterface.batheButton.setIcon(GameInterface.loadImage("/assets/bathe.PNG"));
 
-            Icon sunny = new ImageIcon("src/assets/sunny.GIF");
-            GameInterface.sunnyTheSquid.setIcon(sunny);
+            GameInterface.sunnyTheSquid.setIcon(GameInterface.loadGif("/assets/sunny.GIF"));
 
-            GameInterface.statusBlock.setIcon(new ImageIcon("src/assets/statusbox.PNG"));
+            GameInterface.statusBlock.setIcon(GameInterface.loadImage("/assets/statusbox.PNG"));
 
-            GameInterface.backdrop.setIcon(new ImageIcon("src/assets/backdrop.PNG"));
+            GameInterface.backdrop.setIcon(GameInterface.loadImage("/assets/backdrop.PNG"));
 
-            fullness.setIcon(new ImageIcon("src/assets/bar-" + fullness.getStatValue() + ".PNG"));
-            energy.setIcon(new ImageIcon("src/assets/bar-" + energy.getStatValue() + ".PNG"));
-            mood.setIcon(new ImageIcon("src/assets/bar-" + mood.getStatValue() + ".PNG"));
+            fullness.setIcon(GameInterface.loadImage("/assets/bar-" + fullness.getStatValue() + ".PNG"));
+            energy.setIcon(GameInterface.loadImage("/assets/bar-" + energy.getStatValue() + ".PNG"));
+            mood.setIcon(GameInterface.loadImage("/assets/bar-" + mood.getStatValue() + ".PNG"));
 
             squid.setCurrentState(Squid.IDLE);
         }
@@ -177,11 +175,11 @@ public class Actions {
      * @return                - The path of the image file as a String */
     public String getResourcePath(int newValue, int currentState) {
         if(currentState == Squid.SLEEPING) {
-            return "src/assets/darkbar-" + newValue +".PNG";
+            return "/assets/darkbar-" + newValue +".PNG";
         }
 
         else {
-            return "src/assets/bar-" + newValue + ".PNG";
+            return "/assets/bar-" + newValue + ".PNG";
         }
 
     }
@@ -206,7 +204,7 @@ public class Actions {
             statusBar.setStatValue(newValue);
 
             // Updating stat value
-            statusBar.setIcon(new ImageIcon(getResourcePath(statusBar.getStatValue(), currentState)));
+            statusBar.setIcon(GameInterface.loadImage(getResourcePath(statusBar.getStatValue(), currentState)));
 
             if(currentState == Squid.SLEEPING) {
                 System.out.println("Executing Sleep Task at " + LocalDateTime.now().format(GameInterface.timeFormatter));
@@ -228,7 +226,7 @@ public class Actions {
 
         else if(newValue > 7) {
             statusBar.setStatValue(7);
-            statusBar.setIcon(new ImageIcon(getResourcePath(statusBar.getStatValue(), currentState)));
+            statusBar.setIcon(GameInterface.loadImage(getResourcePath(statusBar.getStatValue(), currentState)));
         }
     }
 }

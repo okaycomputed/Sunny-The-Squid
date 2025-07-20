@@ -22,33 +22,25 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     boolean leftPressed = false;
     boolean rightPressed = false;
 
-    ImageIcon backdropImg = new ImageIcon("src/assets/backdrop.PNG");
-    JLabel backdrop = new JLabel(backdropImg);
+    JLabel backdrop = new JLabel(GameInterface.loadImage("/assets/backdrop.PNG"));
 
-    ImageIcon exitImg = new ImageIcon("src/assets/exit.PNG");
-    JButton exit = new JButton(exitImg);
+    JButton exit = new JButton(GameInterface.loadImage("/assets/exit.PNG"));
 
-    ImageIcon minimizeImg = new ImageIcon("src/assets/minimize.PNG");
-    JButton minimize = new JButton(minimizeImg);
+    JButton minimize = new JButton(GameInterface.loadImage("/assets/minimize.PNG"));
 
-    ImageIcon backImg = new ImageIcon("src/assets/back.PNG");
-    JButton back = new JButton(backImg);
+    JButton back = new JButton(GameInterface.loadImage("/assets/back.PNG"));
 
-    ImageIcon boardImg = new ImageIcon("src/assets/pong-board.png");
-    JLabel pongBoard = new JLabel(boardImg);
+    JLabel pongBoard = new JLabel(GameInterface.loadImage("/assets/pong-board.png"));
 
-    ImageIcon lineImg = new ImageIcon("src/assets/board-line.png");
-    JLabel boardLine = new JLabel(lineImg);
+    JLabel boardLine = new JLabel(GameInterface.loadImage("/assets/board-line.png"));
 
-    ImageIcon playerImg = new ImageIcon("src/assets/player-paddle.png");
-    ImageIcon sunnyImg = new ImageIcon("src/assets/sunny-paddle.png");
-    ImageIcon ballImg = new ImageIcon("src/assets/pong-ball.png");
+    ImageIcon playerImg = GameInterface.loadImage("/assets/player-paddle.png");
+    ImageIcon sunnyImg = GameInterface.loadImage("/assets/sunny-paddle.png");
+    ImageIcon ballImg = GameInterface.loadImage("/assets/pong-ball.png");
 
-    ImageIcon gameOverImg = new ImageIcon("src/assets/game-over-banner.png");
-    JLabel gameOverBanner = new JLabel(gameOverImg);
+    JLabel gameOverBanner = new JLabel(GameInterface.loadImage("/assets/game-over-banner.png"));
 
-    ImageIcon returnImg = new ImageIcon("src/assets/return.PNG");
-    JButton returnButton = new JButton(returnImg);
+    JButton returnButton = new JButton(GameInterface.loadImage("/assets/return.PNG"));
 
     ImageIcon[] scores = new ImageIcon[6];
 
@@ -78,7 +70,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
 
         // Instantiating score ImageIcons
         for(int i = 0; i < scores.length; i++) {
-            scores[i] = new ImageIcon("src/assets/score-" + i + ".png");
+            scores[i] = GameInterface.loadImage("/assets/score-" + i + ".png");
         }
 
         // Instantiating paddle and ball object for the game
@@ -99,7 +91,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
     }
 
     public void addGameTitleBar() {
-        Image cursor = getToolkit().getImage("src/assets/cursor.PNG");
+        Image cursor = Toolkit.getDefaultToolkit().getImage(PongInterface.class.getResource("/assets/cursor.PNG"));
         setCursor(Toolkit.getDefaultToolkit().createCustomCursor(cursor, new Point(0,0), "Default"));
 
         // Creating the exit button

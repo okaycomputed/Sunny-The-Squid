@@ -3,8 +3,11 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -38,29 +41,29 @@ public class GameInterface extends JFrame {
     boolean isSleepButtonOn;
 
     // Initializing GUI components as instance variables (so they can be called in other classes)
-    static JButton exit = new JButton(loadImage("src/assets/exit.PNG"));
-    static JButton minimize = new JButton(loadImage("src/assets/minimize.PNG"));
+    static JButton exit = new JButton(loadImage("/assets/exit.PNG"));
+    static JButton minimize = new JButton(loadImage("/assets/minimize.PNG"));
 
-    static JButton sleepButton = new JButton(loadImage("src/assets/sleep.PNG"));
-    static JButton eatButton = new JButton(loadImage("src/assets/eat.PNG"));
-    static JButton playButton = new JButton(loadImage("src/assets/play.PNG"));
-    static JButton batheButton = new JButton(loadImage("src/assets/bathe.PNG"));
+    static JButton sleepButton = new JButton(loadImage("/assets/sleep.PNG"));
+    static JButton eatButton = new JButton(loadImage("/assets/eat.PNG"));
+    static JButton playButton = new JButton(loadImage("/assets/play.PNG"));
+    static JButton batheButton = new JButton(loadImage("/assets/bathe.PNG"));
 
     static JLabel sunnyText = new JLabel("Sunny");
 
     static JLabel fullnessText = new JLabel("Fullness");
-    static JLabel fullnessIcon = new JLabel(loadImage("src/assets/hunger.PNG"));
+    static JLabel fullnessIcon = new JLabel(loadImage("/assets/hunger.PNG"));
 
     static JLabel energyText = new JLabel("Energy");
-    static JLabel energyIcon = new JLabel(loadImage("src/assets/energy.PNG"));
+    static JLabel energyIcon = new JLabel(loadImage("/assets/energy.PNG"));
 
     static JLabel moodText = new JLabel("Mood");
-    static JLabel moodIcon = new JLabel(loadImage("src/assets/mood.PNG"));
+    static JLabel moodIcon = new JLabel(loadImage("/assets/mood.PNG"));
 
-    static JLabel statusBlock = new JLabel(loadImage("src/assets/statusbox.PNG"));
+    static JLabel statusBlock = new JLabel(loadImage("/assets/statusbox.PNG"));
 
     // Sunny's default idle GIF
-    static Icon sunnyIdle = new ImageIcon("src/assets/sunny.GIF");
+    static Icon sunnyIdle = loadGif("/assets/sunny.GIF");
     static JLabel sunnyTheSquid = new JLabel(sunnyIdle);
 
     // Storing all of Sunny's eating sprites inside an array
@@ -72,23 +75,23 @@ public class GameInterface extends JFrame {
     /* When food is hovered over the squid, it will change the sprite to a BufferedImage in order to retrieve the
        color values of the image when hovering over it - this is to prevent activating the 'eat' method when hovering
        over a transparent pixel */
-    static BufferedImage sunnyEatImg = loadBufferedImage("src/assets/eat-0.PNG");
+    static BufferedImage sunnyEatImg = loadBufferedImage("/assets/eat-0.PNG");
 
     // Sunny's dirty GIF
-    static Icon sunnyDirty = new ImageIcon("src/assets/sunny-dirty.GIF");
+    static Icon sunnyDirty = loadGif("/assets/sunny-dirty.GIF");
 
     // Sunny dirty IMG (for mouse hover)
-    static Icon sunnyDirtyHover = new ImageIcon("src/assets/dirty-0.PNG");
+    static Icon sunnyDirtyHover = loadImage("/assets/dirty-0.PNG");
 
     // To check pixels
-    static BufferedImage sunnyDirtyImg = loadBufferedImage("src/assets/dirty-0.PNG");
+    static BufferedImage sunnyDirtyImg = loadBufferedImage("/assets/dirty-0.PNG");
 
-    static JLabel squidFood = new JLabel(loadImage("src/assets/food-1.PNG"));
-    static JLabel soap = new JLabel(loadImage("src/assets/soap.PNG"));
+    static JLabel squidFood = new JLabel(loadImage("/assets/food-1.PNG"));
+    static JLabel soap = new JLabel(loadImage("/assets/soap.PNG"));
 
-    static JLabel backdrop = new JLabel(loadImage("src/assets/backdrop.PNG"));
+    static JLabel backdrop = new JLabel(loadImage("/assets/backdrop.PNG"));
 
-    Image petting = getToolkit().getImage("src/assets/petting.PNG");
+    Image petting = Toolkit.getDefaultToolkit().getImage(GameInterface.class.getResource("/assets/petting.PNG"));
 
     // Preference keys
     // To save the state of the sleep button
@@ -152,15 +155,15 @@ public class GameInterface extends JFrame {
 
     // Variables to handle the audio being played
     private Clip backgroundClip;
-    public static final String IDLE_TRACK = "src/assets/sfx/idle-track.wav";
-    public static final String SLEEPING_TRACK = "src/assets/sfx/sleeping-track.wav";
-    public static final String SOAP_BUBBLES = "src/assets/sfx/bathe-soap-bubbles.wav";
-    public static final String BUTTON_CLICKED = "src/assets/sfx/button-clicked.wav";
-    public static final String ERROR = "src/assets/sfx/error.wav";
-    public static final String GLISTENING = "src/assets/sfx/glistening.wav";
-    public static final String BURP = "src/assets/sfx/burp.wav";
-    public static final String GAME_OVER = "src/assets/sfx/game-over.wav";
-    public static final String BOUNCE = "src/assets/sfx/ball-bounce.wav";
+    public static final String IDLE_TRACK = "/assets/sfx/idle-track.wav";
+    public static final String SLEEPING_TRACK = "/assets/sfx/sleeping-track.wav";
+    public static final String SOAP_BUBBLES = "/assets/sfx/bathe-soap-bubbles.wav";
+    public static final String BUTTON_CLICKED = "/assets/sfx/button-clicked.wav";
+    public static final String ERROR = "/assets/sfx/error.wav";
+    public static final String GLISTENING = "/assets/sfx/glistening.wav";
+    public static final String BURP = "/assets/sfx/burp.wav";
+    public static final String GAME_OVER = "/assets/sfx/game-over.wav";
+    public static final String BOUNCE = "/assets/sfx/ball-bounce.wav";
 
     public GameInterface() {
         // Setting up GUI and adding a title
@@ -182,16 +185,16 @@ public class GameInterface extends JFrame {
         setUndecorated(true);
 
         // Setting the icon image of the application
-        setIconImage(Objects.requireNonNull(loadImage("src/assets/app-icon.PNG")).getImage());
+        setIconImage(Objects.requireNonNull(loadImage("/assets/app-icon.PNG")).getImage());
 
         // Initializing Sunny's eating sprites
         for(int i = 0; i < 9; i++) {
-            sunnyEat[i] = new ImageIcon("src/assets/eat-" + i + ".PNG");
+            sunnyEat[i] = loadImage("/assets/eat-" + i + ".PNG");
         }
 
         // Initializing Sunny's bathing sprites
         for(int i = 0; i < sunnyBathe.length; i++) {
-            sunnyBathe[i] = new ImageIcon("src/assets/bathe-" + i + ".PNG");
+            sunnyBathe[i] = loadImage("/assets/bathe-" + i + ".PNG");
         }
 
         // Set initial state for Sleep JButton
@@ -264,17 +267,23 @@ public class GameInterface extends JFrame {
     }
 
     // Method to play a looping background track
-    public void playBackgroundMusic(String filePath) {
+    public void playBackgroundMusic(String resourcePath) {
         try {
-            // Retrieves the audio file from path
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filePath));
+            // Load audio from classpath as a stream
+            InputStream is = GameInterface.class.getResourceAsStream(resourcePath);
+            if (is == null) {
+                System.out.println("Could not find audio resource: " + resourcePath);
+                return;
+            }
+
+            // Convert to AudioInputStream
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new BufferedInputStream(is));
 
             backgroundClip = AudioSystem.getClip();
             backgroundClip.open(audioStream);
 
-            // Loops background music
+            // Loop continuously
             backgroundClip.loop(Clip.LOOP_CONTINUOUSLY);
-
             backgroundClip.start();
 
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
@@ -283,12 +292,19 @@ public class GameInterface extends JFrame {
     }
 
     // Method to play short sfx (non-loop)
-    public static void playSfx(String filePath) {
+    public static void playSfx(String resourcePath) {
         try {
-            // Retrieves the audio file from path
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filePath));
+            // Load audio from the classpath
+            InputStream is = GameInterface.class.getResourceAsStream(resourcePath);
+            if (is == null) {
+                System.out.println("Could not find audio resource: " + resourcePath);
+                return;
+            }
 
-            // Creates a new instance of 'clip' so the variable does not need to be declared again
+            // Wrap the input stream to support mark/reset
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new BufferedInputStream(is));
+
+            // Play the sound effect
             Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
             clip.start();
@@ -309,8 +325,15 @@ public class GameInterface extends JFrame {
     // Creates the 'Font' object from a ttf file in order to create a custom font
     public Font getFont() {
         try {
-            File fileName = new File("src/assets/PixelifySans-Regular.ttf");
-            return Font.createFont(Font.TRUETYPE_FONT, fileName);
+            // Load the font file as a resource from the classpath
+            InputStream is = GameInterface.class.getResourceAsStream("/assets/PixelifySans-Regular.ttf");
+
+            if (is == null) {
+                System.out.println("Font resource not found!");
+                return super.getFont();
+            }
+
+            return Font.createFont(Font.TRUETYPE_FONT, is);
 
         } catch (FontFormatException | IOException exception) {
             Logger.getLogger(GameInterface.class.getName()).log(Level.SEVERE, null, exception);
@@ -320,38 +343,63 @@ public class GameInterface extends JFrame {
 
     // Method to customize a cursor for the application
     public void customizeApplicationCursor() {
-        Image cursor = getToolkit().getImage("src/assets/cursor.PNG");
+        Image cursor = Toolkit.getDefaultToolkit().getImage(GameInterface.class.getResource("/assets/cursor.PNG"));
         setCursor(Toolkit.getDefaultToolkit().createCustomCursor(cursor, new Point(0,0), "Default"));
     }
 
     // Retrieves an image from asset folder as a BufferedImage
     public static BufferedImage loadBufferedImage(String resourcePath) {
         try {
-            // Reads the image file from the path given
-            // Returns an image icon so the component can render it
-            return ImageIO.read(new File(resourcePath));
+            // Load the image as a stream from the classpath
+            InputStream is = GameInterface.class.getResourceAsStream(resourcePath);
 
-        } catch(IOException e) {
+            if (is == null) {
+                System.out.println("Could not find resource: " + resourcePath);
+                return null;
+            }
+
+            // Read and return the BufferedImage
+            return ImageIO.read(is);
+
+        } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to load image: " + resourcePath);
         }
-        System.out.println("Could not find resource");
+
         return null;
     }
 
     // Method to retrieve image from the asset folder as an ImageIcon
     public static ImageIcon loadImage(String resourcePath) {
         try {
-            // Reads the image file from the path given
-            BufferedImage image = ImageIO.read(new File(resourcePath));
+            // Load the resource as a stream from the classpath
+            InputStream is = GameInterface.class.getResourceAsStream(resourcePath);
 
-            // Returns an image icon so the component can render it
+            if (is == null) {
+                System.out.println("Could not find resource: " + resourcePath);
+                return null;
+            }
+
+            // Read the image from the stream
+            BufferedImage image = ImageIO.read(is);
             return new ImageIcon(image);
 
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to load image: " + resourcePath);
         }
-        System.out.println("Could not find resource");
         return null;
+    }
+
+    public static ImageIcon loadGif(String resourcePath) {
+        URL url = GameInterface.class.getResource(resourcePath);
+
+        if (url == null) {
+            System.out.println("Could not find GIF: " + resourcePath);
+            return null;
+        }
+
+        return new ImageIcon(url);
     }
 
     // Creates a custom exit and minimize button
