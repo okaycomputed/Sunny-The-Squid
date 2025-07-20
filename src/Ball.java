@@ -23,11 +23,13 @@ public class Ball extends JLabel {
 
     // Ball will bounce OFF left/right walls
     public void bounceHorizontal() {
+        GameInterface.playSfx(GameInterface.BOUNCE);
         directionX = -directionX;
     }
 
     // Ball will bounce OFF paddles
     public void bounceVertical() {
+        GameInterface.playSfx(GameInterface.BOUNCE);
         directionY = -directionY;
     }
 

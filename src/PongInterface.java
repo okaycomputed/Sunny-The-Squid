@@ -109,6 +109,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         exit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                GameInterface.playSfx(GameInterface.BUTTON_CLICKED);
                 System.exit(0);
             }
         });
@@ -120,6 +121,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         minimize.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                GameInterface.playSfx(GameInterface.BUTTON_CLICKED);
                 setState(JFrame.ICONIFIED);
             }
         });
@@ -129,6 +131,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         back.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                GameInterface.playSfx(GameInterface.BUTTON_CLICKED);
                 dispose();
                 gameTimer.stop();
                 gameInterface.setVisible(true);
@@ -198,11 +201,13 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
         if(playerScore == 5) {
             winnerText.setText("Player Wins!");
             winnerText.setBounds(95, 192, 142, 32);
+            GameInterface.playSfx(GameInterface.GLISTENING);
         }
 
         else {
             winnerText.setText("Sunny Wins!");
             winnerText.setBounds(99, 192, 135, 32);
+            GameInterface.playSfx(GameInterface.GAME_OVER);
         }
     }
 

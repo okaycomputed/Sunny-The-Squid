@@ -19,6 +19,7 @@ import java.util.TimerTask;
 import java.util.prefs.Preferences;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.sound.sampled.*;
 
 public class GameInterface extends JFrame {
     Actions actions = new Actions();
@@ -149,6 +150,18 @@ public class GameInterface extends JFrame {
     private volatile int myX;
     private volatile int myY;
 
+    // Variables to handle the audio being played
+    private Clip backgroundClip;
+    public static final String IDLE_TRACK = "src/assets/sfx/idle-track.wav";
+    public static final String SLEEPING_TRACK = "src/assets/sfx/sleeping-track.wav";
+    public static final String SOAP_BUBBLES = "src/assets/sfx/bathe-soap-bubbles.wav";
+    public static final String BUTTON_CLICKED = "src/assets/sfx/button-clicked.wav";
+    public static final String ERROR = "src/assets/sfx/error.wav";
+    public static final String GLISTENING = "src/assets/sfx/glistening.wav";
+    public static final String BURP = "src/assets/sfx/burp.wav";
+    public static final String GAME_OVER = "src/assets/sfx/game-over.wav";
+    public static final String BOUNCE = "src/assets/sfx/ball-bounce.wav";
+
     public GameInterface() {
         // Setting up GUI and adding a title
         super("Sunny The Squid");
@@ -238,6 +251,59 @@ public class GameInterface extends JFrame {
         // Start scheduled tasks, considering the previous execution time
         startScheduledTasks(remainingTime);
 
+        // Play background music according to squid's current state
+        if(isSleepButtonOn) {
+            // If squid is sleeping, play sleep track
+            playBackgroundMusic(SLEEPING_TRACK);
+        }
+
+        else {
+            // Play default idle-track
+            playBackgroundMusic(IDLE_TRACK);
+        }
+    }
+
+    // Method to play a looping background track
+    public void playBackgroundMusic(String filePath) {
+        try {
+            // Retrieves the audio file from path
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filePath));
+
+            backgroundClip = AudioSystem.getClip();
+            backgroundClip.open(audioStream);
+
+            // Loops background music
+            backgroundClip.loop(Clip.LOOP_CONTINUOUSLY);
+
+            backgroundClip.start();
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Method to play short sfx (non-loop)
+    public static void playSfx(String filePath) {
+        try {
+            // Retrieves the audio file from path
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filePath));
+
+            // Creates a new instance of 'clip' so the variable does not need to be declared again
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Stops the current track
+    public void stopBackgroundMusic() {
+        if (backgroundClip != null && backgroundClip.isRunning()) {
+            backgroundClip.stop();
+            backgroundClip.close();
+        }
     }
 
     // Creates the 'Font' object from a ttf file in order to create a custom font
@@ -299,6 +365,7 @@ public class GameInterface extends JFrame {
         exit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                playSfx(BUTTON_CLICKED);
                 System.exit(0);
             }
         });
@@ -310,6 +377,7 @@ public class GameInterface extends JFrame {
         minimize.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                playSfx(BUTTON_CLICKED);
                 setState(JFrame.ICONIFIED);
             }
         });
@@ -326,6 +394,7 @@ public class GameInterface extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE or already SLEEPING
                 if((prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE || prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.SLEEPING) && prefs.getBoolean(IS_CLEAN, true)) {
+                    playSfx(BUTTON_CLICKED);
                     // If the button is NOT on, on click it will be switched to ON
                     if (!isSleepButtonOn) {
                         isSleepButtonOn = true;
@@ -339,6 +408,12 @@ public class GameInterface extends JFrame {
                         // Save the current state of the squid inside preferences
                         prefs.putInt(CURRENT_STATE, Squid.SLEEPING);
 
+                        // Stops current background music
+                        stopBackgroundMusic();
+
+                        // Plays new music
+                        playBackgroundMusic(SLEEPING_TRACK);
+
                         System.out.println("Sunny began sleeping at " + LocalDateTime.now().format(timeFormatter));
                     }
 
@@ -348,6 +423,9 @@ public class GameInterface extends JFrame {
 
                         prefs.putBoolean(IS_BUTTON_ON, isSleepButtonOn);
                         prefs.putInt(CURRENT_STATE, Squid.IDLE);
+
+                        stopBackgroundMusic();
+                        playBackgroundMusic(IDLE_TRACK);
 
                         System.out.println("Sunny is idle at " + LocalDateTime.now().format(timeFormatter));
                     }
@@ -370,12 +448,19 @@ public class GameInterface extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
                 if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && prefs.getBoolean(IS_CLEAN, true)) {
+                    playSfx(BUTTON_CLICKED);
+
                     // Set current state to 'Eating'
                     prefs.putInt(CURRENT_STATE, Squid.EATING);
 
                     // Spawn the draggable fish
                     squidFood.setBounds(226, 128, 92, 45);
                     squidFood.setVisible(true);
+                }
+
+                else {
+                    // Play an error sound
+                    playSfx(ERROR);
                 }
             }
         });
@@ -388,6 +473,8 @@ public class GameInterface extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this action cannot be performed unless the squid is IDLE
                 if(prefs.getInt(CURRENT_STATE, Squid.IDLE) == Squid.IDLE && prefs.getBoolean(IS_CLEAN, true)) {
+                    playSfx(BUTTON_CLICKED);
+
                     // Set current state to 'Playing'
                     prefs.putInt(CURRENT_STATE, Squid.PLAYING);
 
@@ -412,6 +499,10 @@ public class GameInterface extends JFrame {
                     scheduledEnergy = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
                     scheduledMood = executor.scheduleAtFixedRate(() -> updateFullness.get().run(), INTERVAL_MINUTES, INTERVAL_MINUTES, TimeUnit.MINUTES);
                 }
+
+                else {
+                    playSfx(ERROR);
+                }
             }
         });
         add(playButton);
@@ -423,12 +514,18 @@ public class GameInterface extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Ensure that this button can only be pressed when the squid is NOT CLEAN
                 if(!prefs.getBoolean(IS_CLEAN, true)) {
+                    playSfx(BUTTON_CLICKED);
+
                     // Set current state to 'bathing'
                     prefs.putInt(CURRENT_STATE, Squid.BATHING);
 
                     // Spawn soap bar
                     soap.setBounds(226,128, 60, 40);
                     soap.setVisible(true);
+                }
+
+                else {
+                    playSfx(ERROR);
                 }
             }
         });
@@ -509,7 +606,6 @@ public class GameInterface extends JFrame {
 
         // Change the cursor when hovering over this component
         sunnyTheSquid.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(petting, new Point(0, 0), "Petting"));
-
         add(sunnyTheSquid);
     }
 

@@ -93,6 +93,9 @@ public class Actions {
                 }
             }
 
+            // Play sound after animation completes
+            GameInterface.playSfx(GameInterface.BURP);
+
             // Switch back to the original GIF
             GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
 
@@ -142,6 +145,9 @@ public class Actions {
                     // Switch the label
                     GameInterface.sunnyTheSquid.setIcon(sunnyBathe[currFrame]);
 
+                    // Play bathing sound
+                    GameInterface.playSfx(GameInterface.SOAP_BUBBLES);
+
                     // Increment currFrame
                     currFrame++;
 
@@ -151,6 +157,9 @@ public class Actions {
                         e.printStackTrace();
                     }
                 }
+
+                // Play sound after animation completes
+                GameInterface.playSfx(GameInterface.GLISTENING);
 
                 // Switch back to the original GIF
                 GameInterface.sunnyTheSquid.setIcon(GameInterface.sunnyIdle);
