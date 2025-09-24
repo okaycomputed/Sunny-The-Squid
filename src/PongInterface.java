@@ -40,7 +40,7 @@ public class PongInterface extends JFrame implements KeyListener, ActionListener
 
     JLabel gameOverBanner = new JLabel(GameInterface.loadImage("/assets/game-over-banner.png"));
 
-    JButton returnButton = new JButton(GameInterface.loadImage("/assets/return.PNG"));
+    JButton returnButton = new JButton(GameInterface.loadImage("/assets/return.png"));
 
     ImageIcon[] scores = new ImageIcon[6];
 

@@ -111,8 +111,8 @@ public class GameInterface extends JFrame {
     // Keeps track of the squid's cleanliness
     static final String IS_CLEAN = "IsClean";
 
-    // Keeps track of the last time the squid was clean
-    static final String LAST_CLEAN_TIME = "LastClean";
+    // Keeps track of the time until the squid will be dirty
+    static final String REMAINING_TIME_DIRTY = "RemainingTime";
 
     // Adding indicator bar JLabels
     static StatusBar fullness = new StatusBar(FULLNESS_BAR);
@@ -209,23 +209,23 @@ public class GameInterface extends JFrame {
         // Retrieve squid's cleanliness state
         isClean = prefs.getBoolean(IS_CLEAN, squid.isClean());
 
-        // Retrieve the time that the squid was last cleaned
-        lastCleanTime = prefs.getLong(LAST_CLEAN_TIME, System.currentTimeMillis());
+        // Retrieve the time left until the squid is dirty
+        remainingTimeUntilDirty = prefs.getLong(REMAINING_TIME_DIRTY, System.currentTimeMillis());
 
-        // Retrieve the time elapsed since last cleaned
-        long timeElapsedSinceClean = System.currentTimeMillis() - lastCleanTime;
-
-        if(timeElapsedSinceClean > ONE_DAY_MS && currentState == Squid.IDLE) {
+        if(remainingTimeUntilDirty > ONE_DAY_MS && currentState == Squid.IDLE) {
             // Squid gets dirty
             prefs.putBoolean(IS_CLEAN, false);
+
+            // Update state
             actions.updateCleanlinessState(prefs.getBoolean(IS_CLEAN, true), currentState);
+
+            // Restart the timer
             resetCleanlinessTimer();
         }
 
         // There is time left, continue running the timer with a new interval
-        else if(timeElapsedSinceClean < ONE_DAY_MS) {
-            long remainingTime = ONE_DAY_MS - timeElapsedSinceClean;
-            startCleanlinessTimer(remainingTime);
+        else if(remainingTimeUntilDirty < ONE_DAY_MS) {
+            startCleanlinessTimer(remainingTimeUntilDirty);
         }
 
         // Call the method to refresh display
@@ -780,9 +780,6 @@ public class GameInterface extends JFrame {
                     // Change cleanliness state
                     prefs.putBoolean(IS_CLEAN, true);
 
-                    // Keep track of the last clean time
-                    prefs.putLong(LAST_CLEAN_TIME, System.currentTimeMillis());
-
                     // Change current state back to 'Idle'
                     prefs.putInt(CURRENT_STATE, Squid.IDLE);
 
@@ -947,6 +944,9 @@ public class GameInterface extends JFrame {
                     System.out.println("Squid will be dirty in " + remainingTimeUntilDirty + " seconds");
                     // Deduct the remaining time by a second
                     remainingTimeUntilDirty -= 1000;
+
+                    // Store the remaining time in preferences
+                    prefs.putLong(REMAINING_TIME_DIRTY, remainingTimeUntilDirty);
                 }
 
                 if(remainingTimeUntilDirty <= 0) {

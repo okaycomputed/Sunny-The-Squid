@@ -2,13 +2,16 @@ import javax.swing.*;
 import java.util.prefs.Preferences;
 
 // Sunny's fullness increases when he is EATING
-// It decreases when he is PLAYING or when he is IDLE
+// It decreases when he is IDLE
 
 // Sunny's energy increases when he is SLEEPING
-// It decreases when he is PLAYING
+// It decreases when he is PLAYING and when he is IDLE
 
 // Sunny's mood increases when he is PLAYING
 // It decreases when he is IDLE
+
+// Sunny gets dirty after not opening the app for one whole day
+
 public class StatusBar extends JLabel {
 
     Preferences prefs;
